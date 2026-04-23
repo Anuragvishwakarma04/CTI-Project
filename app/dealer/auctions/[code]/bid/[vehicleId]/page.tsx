@@ -382,6 +382,22 @@ export default function BiddingPage() {
                   </div>
                 )}
               </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+
+  {/* Title */}
+  <p className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+    <span className="w-1 h-4 bg-blue-600 rounded-full inline-block" />
+    Description
+  </p>
+
+  {/* Content */}
+  <p className="text-sm text-gray-600 leading-relaxed">
+    {vehicle?.description 
+      ? vehicle.description 
+      : "No description provided for this vehicle."}
+  </p>
+
+</div>
             </div>
 
             {/* RIGHT: Auction Panel */}
