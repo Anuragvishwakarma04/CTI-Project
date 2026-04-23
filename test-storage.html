@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+// Test localStorage
+const user = {id: '1', name: 'Test', mobile: '9876543210', role: 'customer', createdAt: new Date().toISOString()};
+localStorage.setItem('user', JSON.stringify(user));
+console.log('Saved:', localStorage.getItem('user'));
+</script>
+<p>Check console</p>
+</body>
+</html>
