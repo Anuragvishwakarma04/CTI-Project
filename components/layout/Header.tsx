@@ -20,6 +20,13 @@ export default function Header() {
   const [showSearch, setShowSearch] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
 
+const navLinkClass = (href: string) => {
+  const isActive = pathname === href || pathname?.startsWith(href + '/');
+  return isActive
+    ? 'text-primary border-b-2 border-primary '      // active
+    : ' hover:text-primary border-b-2 border-transparent text-black'; // inactive
+};
+  
   const isDealerPage = pathname?.startsWith('/dealer/');
   const isSellerType = user?.user_type === 'showroom';
 
@@ -170,15 +177,15 @@ export default function Header() {
 
         <div className="border-t border-gray-200">
           {!isDealerPage && !isSellerType && (
-            <div className=" border-gray-200">
+            <div className=" border-gray-200 ">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <nav className="flex items-center space-x-4 sm:space-x-8 h-12">
 
                   <LocationSelector />
-                  <Link href="/cars" className="nav-link">Buy Cars</Link>
-                  <Link href="/dealers" className="nav-link">Dealers</Link>
-                  <Link href="/services" className="nav-link">Services</Link>
-                  <Link href="/warranty" className="nav-link">Warranty</Link>
+                  <Link href="/cars" className={`${navLinkClass('/cars')}`}>Buy Cars</Link>
+                  <Link href="/dealers" className={navLinkClass('/dealers')}>Dealers</Link>
+                  <Link href="/services" className={navLinkClass('/services')}>Services</Link>
+                  <Link href="/warranty" className={navLinkClass('/warranty')}>Warranty</Link>
 
                   <CarLoan />
                   <Insurance />

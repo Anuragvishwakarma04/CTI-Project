@@ -7,6 +7,8 @@ import CarCard from '@/components/car/CarCard';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/api';
+import SupportButton from '@/components/supportButton/page';
+import AuctionBanner from '@/components/auctionNoti/page';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
@@ -22,7 +24,7 @@ export default function Home() {
     e.preventDefault();
     const token = auth.getToken();
     const user = auth.getUser();
-    
+
     if (!token || !user) {
       // Not logged in - redirect to login
       router.push('/login?redirect=/dashboard/add-listing');
@@ -42,7 +44,7 @@ export default function Home() {
     fetchTrendingFavorites();
   }, []);
 
-   const fetchDashboard = async () => {
+  const fetchDashboard = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/dashboard`);
       const result = await response.json();
@@ -86,7 +88,7 @@ export default function Home() {
   const stats = dashboardData?.stats || { totalCars: 5000, totalDealers: 500, happyCustomers: 10000 };
   const featuredCars = dashboardData?.featuredCars || [];
 
-  
+
   return (
     <div>
       {/* Hero Section */}
@@ -105,7 +107,7 @@ export default function Home() {
                 <Link href="/cars" className="bg-primary-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-700 transition text-center">
                   Explore Cars
                 </Link>
-                <button 
+                <button
                   onClick={handleSellCarClick}
                   className="bg-white text-primary-600 px-8 py-4 rounded-lg font-semibold border-2 border-primary-600 hover:bg-primary-50 transition text-center"
                 >
@@ -151,7 +153,7 @@ export default function Home() {
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Why Choose CarTrade?</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Why Choose Car Trust?</h2>
           <p className="text-gray-600 text-lg">Your trusted partner in car buying and selling</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
@@ -201,27 +203,27 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading ? (
-  <div className="col-span-full text-center py-12">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-    <p className="text-gray-600">Loading cars...</p>
-  </div>
-) : featuredCars.length > 0 ? (
-  featuredCars
-    .filter((car: any) => 
-      car.featured_image || car.image_url || car.thumbnail || car.images?.[0]?.url
-    )
-    .slice(0, 6)
-    .map((car: any) => (
-      <CarCard key={car.vehicle_id || car.id} car={car} />
-    ))
-) : (
-  <div className="col-span-full text-center py-12">
-    <p className="text-gray-600">No featured cars available</p>
-  </div>
-)}
+              <div className="col-span-full text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading cars...</p>
+              </div>
+            ) : featuredCars.length > 0 ? (
+              featuredCars
+                .filter((car: any) =>
+                  car.featured_image || car.image_url || car.thumbnail || car.images?.[0]?.url
+                )
+                .slice(0, 6)
+                .map((car: any) => (
+                  <CarCard key={car.vehicle_id || car.id} car={car} />
+                ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-600">No featured cars available</p>
+              </div>
+            )}
           </div>
         </div>
-        
+
       </section>
 
       {/* Top Favorites */}
@@ -285,7 +287,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Ready to Sell Your Car?</h2>
           <p className="text-lg sm:text-xl mb-8 text-primary-50 max-w-2xl mx-auto">Get the best price with our hassle-free process. List your car in minutes!</p>
-          <button 
+          <button
             onClick={handleSellCarClick}
             className="inline-block bg-white text-primary-600 px-10 py-5 rounded-xl font-bold hover:bg-primary-50 transition shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 text-lg"
           >
@@ -293,6 +295,8 @@ export default function Home() {
           </button>
         </div>
       </section>
+      <AuctionBanner/>
+      {/* <SupportButton/> */}
     </div>
   );
 }

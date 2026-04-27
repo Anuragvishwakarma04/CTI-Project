@@ -39,7 +39,7 @@ export default function BiddingPage() {
   const [specsOpen, setSpecsOpen] = useState(false);
   const [addInfoOpen, setAddInfoOpen] = useState(false);
   const [tick, setTick] = useState(0);
-  const intervalRef = useRef<any>(null)
+  // const intervalRef = useRef<any>(null)
 
   const isLive = (() => {
     if (!auction) return false;
@@ -70,26 +70,15 @@ export default function BiddingPage() {
   }, [bids]);
 
   useEffect(() => {
-    if (!isLive || !code || !vehicleId) return
+  if (!isLive || !code || !vehicleId) return;
 
+  const interval = setInterval(() => {
+    console.log("FETCH BIDS HIT");
+    fetchBids();
+  }, 30000); 
 
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-    }
-
-    //  new interval set 
-    intervalRef.current = setInterval(() => {
-      console.log("FETCH BIDS HIT")
-      fetchBids()
-    }, 5000)
-
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-      }
-    }
-  }, [])
+  return () => clearInterval(interval);
+}, [isLive, code, vehicleId]);
 
   useEffect(() => {
     if (!isLive) return;
@@ -181,7 +170,7 @@ export default function BiddingPage() {
 
   const rawAmount = parseInt(bidAmount.replace(/,/g, '') || '0');
   const highestBidAmount = highestBid ? Number(highestBid.bid_amount) : 0;
- const images: string[] = vehicle?.images?.map((img: any) => img.url) || []
+  const images: string[] = vehicle?.images?.map((img: any) => img.url) || []
 
   if (loading) {
     return (
@@ -232,12 +221,6 @@ export default function BiddingPage() {
                 LIVE
               </div>
             )}
-            {/* <p>Fuel: {vehicle.fuel_type}</p>
-<p>KM: {vehicle.km_driven}</p>
-<p>Owner: {vehicle.owner}</p>
-<p>Year: {vehicle.year}</p>
-<p>Color: {vehicle.color}</p>
-<p>City: {vehicle.city}</p> */}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-start">
@@ -317,12 +300,26 @@ export default function BiddingPage() {
                 {addInfoOpen && (
                   <div className="px-4 pb-4 grid grid-cols-2 gap-3 border-t border-gray-100 capitalize">
 
+                    {vehicle.ownership && (
+                      <SpecItem label="Owner" value={vehicle.ownership} />
+                    )}
                     {vehicle.registration_number && (
                       <SpecItem label="Registration" value={vehicle.registration_number} />
                     )}
 
-                    {vehicle.ownership && (
-                      <SpecItem label="Owner" value={vehicle.ownership} />
+
+                    {vehicle.has_insurance !== undefined && (
+                      <SpecItem
+                        label="Insurance"
+                        value={vehicle.has_insurance ? "Available" : "Not Available"}
+                      />
+                    )}
+                    {/* finance */}
+                    {vehicle.has_finance == undefined && (
+                      <SpecItem
+                        label="Finance"
+                        value={vehicle.has_finance ? "Available" : "Not Available"}
+                      />
                     )}
 
                     {vehicle.body_type && (
@@ -333,12 +330,6 @@ export default function BiddingPage() {
                       <SpecItem label="Location" value={vehicle.location} />
                     )}
 
-                    {vehicle.has_insurance !== undefined && (
-                      <SpecItem
-                        label="Insurance"
-                        value={vehicle.has_insurance ? "Available" : "Not Available"}
-                      />
-                    )}
 
                     {vehicle.insurance_expiry && (
                       <SpecItem label="Insurance Expiry" value={vehicle.insurance_expiry} />
@@ -358,7 +349,7 @@ export default function BiddingPage() {
                       />
                     )} */}
 
-                    {vehicle.reconditioning_cost && (
+                    {/* {vehicle.reconditioning_cost && (
                       <SpecItem
                         label="Reconditioning"
                         value={`₹${Number(vehicle.reconditioning_cost).toLocaleString('en-IN')}`}
@@ -370,7 +361,7 @@ export default function BiddingPage() {
                         label="Accessories Cost"
                         value={`₹${Number(vehicle.accessories_cost).toLocaleString('en-IN')}`}
                       />
-                    )}
+                    )} */}
 
                     {/* {vehicle.other_expenses && (
                       <SpecItem
@@ -384,20 +375,20 @@ export default function BiddingPage() {
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-4">
 
-  {/* Title */}
-  <p className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-    <span className="w-1 h-4 bg-blue-600 rounded-full inline-block" />
-    Description
-  </p>
+                {/* Title */}
+                <p className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <span className="w-1 h-4 bg-blue-600 rounded-full inline-block" />
+                  Description
+                </p>
 
-  {/* Content */}
-  <p className="text-sm text-gray-600 leading-relaxed">
-    {vehicle?.description 
-      ? vehicle.description 
-      : "No description provided for this vehicle."}
-  </p>
+                {/* Content */}
+                <p className="text-sm text-gray-600 leading-relaxed text-justify">
+                  {vehicle?.description
+                    ? vehicle.description
+                    : "No description provided for this vehicle."}
+                </p>
 
-</div>
+              </div>
             </div>
 
             {/* RIGHT: Auction Panel */}

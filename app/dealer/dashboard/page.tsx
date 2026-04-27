@@ -96,6 +96,7 @@ export default function DealerDashboardPage() {
 
   useEffect(() => {
     // Store current section in sessionStorage whenever it changes
+    
     sessionStorage.setItem('dashboard_section', activeSection);
 
     if (activeSection === 'overview' && user) {
@@ -114,7 +115,7 @@ export default function DealerDashboardPage() {
       fetchAuctions();
     }
   }, [activeSection, user, statusFilter, currentPage, searchQuery, auctionCategory, auctionSearch, auctionDateFrom, auctionDateTo, auctionStatus, auctionSortBy, auctionSortOrder, auctionPage, auctionPerPage]);
-
+  
   const fetchDashboardStats = async () => {
     try {
       setStatsLoading(true);

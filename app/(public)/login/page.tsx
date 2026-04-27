@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
-import { Mail, AlertCircle } from 'lucide-react';
+import { Smartphone, AlertCircle } from 'lucide-react';
 import { api, auth } from '@/lib/api';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [mobile, setMobile] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [role, setRole] = useState<'customer' | 'dealer' | 'showroom'>('customer');
-  const [errors, setErrors] = useState({ email: '', otp: '', dealer_code: '' });
+  const [errors, setErrors] = useState({ mobile: '', otp: '', dealer_code: '' });
   const [loading, setLoading] = useState(false);
   const [hasDealerCode, setHasDealerCode] = useState(false);
   const [dealerCode, setDealerCode] = useState('');
@@ -19,49 +19,32 @@ export default function LoginPage() {
   const router = useRouter();
   const { setUser, setToken } = useStore();
 
-  // COMMENTED: Mobile OTP Login (for future use)
-  // const [mobile, setMobile] = useState('');
-  // const validateMobile = (value: string): string => {
-  //   const cleaned = value.replace(/\D/g, '');
-  //   if (!cleaned) return 'Mobile number is required';
-  //   if (cleaned.length !== 10) return 'Mobile number must be 10 digits';
-  //   if (!/^[6-9]/.test(cleaned)) return 'Mobile number must start with 6-9';
-  //   return '';
-  // };
-  // const handleMobileChange = (value: string) => {
-  //   const cleaned = value.replace(/\D/g, '').slice(0, 10);
-  //   setMobile(cleaned);
-  //   if (errors.mobile) setErrors({ ...errors, mobile: '' });
-  // };
-
   useEffect(() => {
-    // Get redirect parameter from URL
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');
-    if (redirect) {
-      setRedirectPath(redirect);
-    }
+    if (redirect) setRedirectPath(redirect);
   }, []);
 
-  const getDashboardPath = (userType: string) => {
-    if (userType === 'dealer') return '/dealer/dashboard';
-    if (userType === 'showroom') return '/showroom/dashboard';
-    return '/dashboard';
-  };
+const getDashboardPath = (userType: string) => {
+  if (userType === 'dealer') return '/dealer/dashboard';
+  if (userType === 'showroom') return '/showroom/dashboard';
+  return '/dashboard';
+};
 
   useEffect(() => {
     const token = auth.getToken();
     const savedUser = auth.getUser();
-
     if (token && savedUser) {
       setUser(savedUser);
       router.replace(getDashboardPath(savedUser.user_type));
     }
   }, [router, setUser]);
 
-  const validateEmail = (value: string): string => {
-    if (!value) return 'Email is required';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email format';
+  const validateMobile = (value: string): string => {
+    const cleaned = value.replace(/\D/g, '');
+    if (!cleaned) return 'Mobile number is required';
+    if (cleaned.length !== 10) return 'Mobile number must be 10 digits';
+    if (!/^[6-9]/.test(cleaned)) return 'Mobile number must start with 6-9';
     return '';
   };
 
@@ -73,27 +56,22 @@ export default function LoginPage() {
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
-    const emailError = validateEmail(email);
-    if (emailError) {
-      setErrors({ ...errors, email: emailError });
+    const mobileError = validateMobile(mobile);
+    if (mobileError) {
+      setErrors({ ...errors, mobile: mobileError });
       return;
     }
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/send-email-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, type: role }),
-      });
-      const data = await response.json();
-      if (data.success) {
+      const response = await api.sendOTP(mobile, role);
+      if (response.success) {
         setOtpSent(true);
-        setErrors({ email: '', otp: '', dealer_code: '' });
+        setErrors({ mobile: '', otp: '', dealer_code: '' });
       } else {
-        setErrors({ ...errors, email: data.message || 'Failed to send OTP' });
+        setErrors({ ...errors, mobile: response.message || 'Failed to send OTP' });
       }
     } catch (error) {
-      setErrors({ ...errors, email: 'Network error. Please try again.' });
+      setErrors({ ...errors, mobile: 'Network error. Please try again.' });
     } finally {
       setLoading(false);
     }
@@ -101,84 +79,80 @@ export default function LoginPage() {
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const otpError = validateOTP(otp);
     if (otpError) {
       setErrors({ ...errors, otp: otpError });
       return;
     }
+
     setLoading(true);
+
     try {
-      const body: any = { email, otp, type: role };
-      if (hasDealerCode && dealerCode) body.dealer_code = dealerCode;
-      
-      console.log('Verifying OTP with:', body);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/verify-email-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await response.json();
-      console.log('OTP verification response:', data);
-      
-      if (data.success) {
-        const userType = data.type || role;
-        
-        // Save token immediately
-        if (data.token) {
-          console.log('Saving token to localStorage:', data.token.substring(0, 20) + '...');
-          auth.setToken(data.token);
-          setToken(data.token);
-          
-          // Verify token was saved
-          const savedToken = auth.getToken();
-          console.log('Token saved successfully:', savedToken ? 'Yes' : 'No');
-        } else {
-          console.error('No token in response!');
+      const response = await api.verifyOTP(
+        mobile,
+        otp,
+        role,
+        hasDealerCode && dealerCode ? dealerCode : undefined
+      );
+
+      if (response.success) {
+        // Token save 
+        if (response.token) {
+          auth.setToken(response.token);
+          setToken(response.token);
         }
-        
-        if (data.profile_completed) {
-          console.log('Profile completed, fetching user data...');
-          // Profile already completed - login directly
-          const profileRes = await api.getProfile(data.token);
-          if (profileRes.success) {
-            auth.setUser(profileRes.user);
-            setUser(profileRes.user);
+
+        // Profile fetch
+        const profileRes = await api.getProfile(response.token);
+        console.log('USER NAME:', profileRes.user?.name);
+        console.log('IS COMPLETE:', profileRes.user?.name && profileRes.user.name.trim() !== '');
+
+        if (profileRes.success && profileRes.user) {
+          const user = profileRes.user;
+
+          // Profile complete check 
+          const isProfileComplete = user.name && user.name.trim() !== '';
+
+          if (isProfileComplete) {
+            // Seedha dashboard pe bhejo
+            auth.setUser(user);
+            setUser(user);
             localStorage.removeItem('loginPageVisits');
-            
+
             if (redirectPath) {
               router.push(redirectPath);
             } else {
-              router.push(getDashboardPath(profileRes.user.user_type));
+              router.push(getDashboardPath(user.user_type));
             }
+          } else {
+            // Profile incomplete 
+            const redirectParam = redirectPath
+              ? `?redirect=${encodeURIComponent(redirectPath)}`
+              : '';
+            router.push(`/complete-profile${redirectParam}`);
           }
         } else {
-          console.log('Profile not completed, redirecting to complete-profile...');
-          // Profile not completed - redirect to complete profile
-          const redirectParam = redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : '';
+          // Profile fetch fail
+          const redirectParam = redirectPath
+            ? `?redirect=${encodeURIComponent(redirectPath)}`
+            : '';
           router.push(`/complete-profile${redirectParam}`);
         }
       } else {
-        if (data.errors) {
-          const newErrors: any = { email: '', otp: '', dealer_code: '' };
-          Object.keys(data.errors).forEach(key => {
-            newErrors[key] = data.errors[key][0];
-          });
-          setErrors(newErrors);
-        } else {
-          setErrors({ ...errors, otp: data.message || 'Invalid OTP' });
-        }
+        setErrors({ ...errors, otp: response.message || 'Invalid OTP' });
       }
     } catch (error) {
-      console.error('OTP verification error:', error);
       setErrors({ ...errors, otp: 'Network error. Please try again.' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEmailChange = (value: string) => {
-    setEmail(value.trim());
-    if (errors.email) setErrors({ ...errors, email: '' });
+  const handleMobileChange = (value: string) => {
+    const cleaned = value.replace(/\D/g, '').slice(0, 10);
+    setMobile(cleaned);
+    if (errors.mobile) setErrors({ ...errors, mobile: '' });
   };
 
   const handleOTPChange = (value: string) => {
@@ -192,7 +166,7 @@ export default function LoginPage() {
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-primary-600 to-primary-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Mail className="w-8 h-8 text-white" />
+            <Smartphone className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
           <p className="text-gray-600 mt-2">Login to continue</p>
@@ -207,10 +181,11 @@ export default function LoginPage() {
             <button
               key={r.value}
               onClick={() => setRole(r.value)}
-              className={`flex-1 py-3 rounded-lg font-semibold transition text-sm ${role === r.value
+              className={`flex-1 py-3 rounded-lg font-semibold transition text-sm ${
+                role === r.value
                   ? 'bg-primary-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              }`}
             >
               {r.label}
             </button>
@@ -220,22 +195,23 @@ export default function LoginPage() {
         {!otpSent ? (
           <form onSubmit={handleSendOTP} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold mb-2">Email Address</label>
+              <label className="block text-sm font-semibold mb-2">Mobile Number</label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => handleEmailChange(e.target.value)}
-                placeholder="Enter your email"
-                className={`input-field ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
+                type="tel"
+                value={mobile}
+                onChange={(e) => handleMobileChange(e.target.value)}
+                placeholder="10-digit mobile number"
+                className={`input-field ${errors.mobile ? 'border-red-500 focus:ring-red-500' : ''}`}
+                maxLength={10}
               />
-              {errors.email && (
+              {errors.mobile && (
                 <div className="flex items-center gap-1 mt-2 text-red-600 text-sm">
                   <AlertCircle className="w-4 h-4" />
-                  <span>{errors.email}</span>
+                  <span>{errors.mobile}</span>
                 </div>
               )}
-              {email && !errors.email && validateEmail(email) === '' && (
-                <p className="text-green-600 text-sm mt-2">✓ Valid email address</p>
+              {mobile && !errors.mobile && validateMobile(mobile) === '' && (
+                <p className="text-green-600 text-sm mt-2">✓ Valid mobile number</p>
               )}
             </div>
             {role === 'customer' && (
@@ -295,10 +271,10 @@ export default function LoginPage() {
                 <p className="text-green-600 text-sm mt-2">✓ Valid OTP format</p>
               )}
               <p className="text-sm text-gray-600 mt-2">
-                OTP sent to {email}{' '}
+                OTP sent to +91 {mobile}{' '}
                 <button
                   type="button"
-                  onClick={() => { setOtpSent(false); setOtp(''); setErrors({ email: '', otp: '', dealer_code: '' }); }}
+                  onClick={() => { setOtpSent(false); setOtp(''); setErrors({ mobile: '', otp: '', dealer_code: '' }); }}
                   className="text-primary-600 font-semibold"
                 >
                   Change

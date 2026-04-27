@@ -18,6 +18,7 @@ export default function CompleteProfilePage() {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
+    email: '',
     business_name: '',
     gst_number: '',
     city: '',
@@ -30,32 +31,52 @@ export default function CompleteProfilePage() {
 
   useEffect(() => {
     let isMounted = true;
-    
-    // Check if user has token (from OTP verification)
+
     const token = auth.getToken();
     console.log('Complete Profile - Token check:', token ? 'Token exists' : 'No token');
-    
+
     if (!token) {
       console.log('No token found, redirecting to login');
       router.push('/login');
       return;
     }
-    
-    // Fetch user info from token to get user type
+
     const fetchUserType = async () => {
       try {
         console.log('Fetching user profile with token...');
         const profileRes = await api.getProfile(token);
         console.log('Profile response:', profileRes);
-        
+
         if (isMounted) {
           if (profileRes.success && profileRes.user) {
-            setUserType(profileRes.user.user_type || 'customer');
-            console.log('User type set to:', profileRes.user.user_type);
+            const user = profileRes.user;
+
+            // Agar profile already complete hai — dashboard pe redirect karo
+            if (user.name && user.name.trim() !== '' && user.phone) {
+              console.log('Profile already complete, redirecting to dashboard');
+              auth.setUser(user);
+              setUser(user);
+
+              const dashPath =
+                user.user_type === 'dealer' ? '/dealer/dashboard' :
+                  user.user_type === 'showroom' ? '/showroom/dashboard' :
+                    '/dashboard';
+
+              router.push(redirectPath || dashPath);
+              return;
+            }
+
+
+            setUserType(user.user_type || 'customer');
+            setFormData(prev => ({
+              ...prev,
+              phone: user.phone || '',
+              name: user.name || '',
+              email: user.email || ''
+            }));
+            console.log('User type set to:', user.user_type);
           } else {
             console.log('Profile fetch failed or no user data');
-            // If profile doesn't exist yet, that's okay - user is completing it
-            // Don't redirect, just use default customer type
           }
           setIsCheckingAuth(false);
         }
@@ -64,53 +85,44 @@ export default function CompleteProfilePage() {
         if (isMounted) {
           setIsCheckingAuth(false);
         }
-        // Don't redirect on error - user might be in the process of completing profile
       }
     };
-    
+
     fetchUserType();
-    
+
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, [router, redirectPath, setUser]);
 
   const handleChange = (field: string, value: string) => {
-    // Phone number validation
-    if (field === 'phone') {
-      const cleaned = value.replace(/\D/g, '').slice(0, 10);
-      setFormData({ ...formData, [field]: cleaned });
-    } else {
-      setFormData({ ...formData, [field]: value });
-    }
-    
+    setFormData({ ...formData, [field]: value });
     if (errors[field]) {
       setErrors({ ...errors, [field]: '' });
     }
   };
 
-  const validatePhone = (phone: string): string => {
-    if (!phone) return 'Phone number is required';
-    if (phone.length !== 10) return 'Phone number must be 10 digits';
-    if (!/^[6-9]/.test(phone)) return 'Phone number must start with 6-9';
+  const validateEmail = (email: string): string => {
+    if (!email) return 'Email is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Invalid email format';
     return '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate phone number
-    const phoneError = validatePhone(formData.phone);
-    if (phoneError) {
-      setErrors({ ...errors, phone: phoneError });
+
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      setErrors({ ...errors, email: emailError });
       return;
     }
-    
+
     setLoading(true);
 
     const data: any = {
       name: formData.name,
-      phone: formData.phone,
+      email: formData.email,
+      phone: formData.phone
     };
 
     if (userType === 'dealer' || userType === 'showroom') {
@@ -128,7 +140,7 @@ export default function CompleteProfilePage() {
         router.push('/login');
         return;
       }
-      
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/complete-profile`, {
         method: 'POST',
         headers: {
@@ -138,39 +150,31 @@ export default function CompleteProfilePage() {
         body: JSON.stringify(data),
       });
       const result = await response.json();
-      
+
       if (result.success) {
-        // Fetch updated profile
         const profileRes = await api.getProfile(token);
         if (profileRes.success) {
           auth.setUser(profileRes.user);
           setUser(profileRes.user);
-          
-          // Redirect to specified path or default dashboard
+
           if (redirectPath) {
             router.push(redirectPath);
           } else {
-            const dashPath = profileRes.user.user_type === 'dealer' 
-              ? '/dealer/dashboard' 
-              : profileRes.user.user_type === 'showroom'
-              ? '/showroom/dashboard'
-              : '/dashboard';
+            const dashPath =
+              profileRes.user.user_type === 'dealer' ? '/dealer/dashboard' :
+                profileRes.user.user_type === 'showroom' ? '/showroom/dashboard' :
+                  '/dashboard';
             router.push(dashPath);
           }
         }
       } else {
-        // Handle validation errors from API
         if (result.errors) {
-          // Set field-specific errors
           const fieldErrors: any = {};
           Object.keys(result.errors).forEach(key => {
-            fieldErrors[key] = result.errors[key][0]; // Get first error message
+            fieldErrors[key] = result.errors[key][0];
           });
-          setErrors(fieldErrors);
-          
-          // Also show general error with all messages
           const errorMessages = Object.values(result.errors).flat().join(', ');
-          setErrors((prev: any) => ({ ...prev, general: errorMessages }));
+          setErrors({ ...fieldErrors, general: errorMessages });
         } else {
           setErrors({ general: result.message || 'Failed to create profile' });
         }
@@ -190,147 +194,146 @@ export default function CompleteProfilePage() {
         </div>
       ) : (
         <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold mb-2">Complete Your Profile</h1>
-            <p className="text-gray-600">Please provide your details to continue</p>
-          </div>
-
-          {errors.general && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600">
-              <AlertCircle className="w-5 h-5" />
-              <span>{errors.general}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold mb-2">Full Name *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  className="input-field"
-                  required
-                />
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <User className="w-8 h-8 text-white" />
               </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">Phone Number *</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  className={`input-field ${errors.phone ? 'border-red-500' : ''}`}
-                  placeholder="10-digit phone number"
-                  maxLength={10}
-                  required
-                />
-                {errors.phone && (
-                  <p className="text-red-600 text-sm mt-1">{errors.phone}</p>
-                )}
-                {formData.phone && !errors.phone && formData.phone.length === 10 && /^[6-9]/.test(formData.phone) && (
-                  <p className="text-green-600 text-sm mt-1">✓ Valid phone number</p>
-                )}
-              </div>
+              <h1 className="text-3xl font-bold mb-2">Complete Your Profile</h1>
+              <p className="text-gray-600">Please provide your details to continue</p>
             </div>
 
-            {(userType === 'dealer' || userType === 'showroom') && (
-              <>
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <Building2 className="w-5 h-5" />
-                    Business Details
-                  </h3>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">Business Name *</label>
-                      <input
-                        type="text"
-                        value={formData.business_name}
-                        onChange={(e) => handleChange('business_name', e.target.value)}
-                        className="input-field"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">GST Number *</label>
-                      <input
-                        type="text"
-                        value={formData.gst_number}
-                        onChange={(e) => handleChange('gst_number', e.target.value)}
-                        placeholder="29ABCDE1234F1Z5"
-                        className="input-field"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">Contact Person</label>
-                      <input
-                        type="text"
-                        value={formData.contact_person}
-                        onChange={(e) => handleChange('contact_person', e.target.value)}
-                        className="input-field"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Location Details
-                  </h3>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">City *</label>
-                      <input
-                        type="text"
-                        value={formData.city}
-                        onChange={(e) => handleChange('city', e.target.value)}
-                        className="input-field"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">State *</label>
-                      <input
-                        type="text"
-                        value={formData.state}
-                        onChange={(e) => handleChange('state', e.target.value)}
-                        className="input-field"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">Pincode *</label>
-                      <input
-                        type="text"
-                        value={formData.pincode}
-                        onChange={(e) => handleChange('pincode', e.target.value)}
-                        maxLength={6}
-                        className="input-field"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
+            {errors.general && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600">
+                <AlertCircle className="w-5 h-5" />
+                <span>{errors.general}</span>
+              </div>
             )}
 
-            <button type="submit" className="w-full btn-primary" disabled={loading}>
-              {loading ? 'Creating Profile...' : 'Complete Profile'}
-            </button>
-          </form>
-        </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Full Name *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    className="input-field"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Email Address *</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                    className={`input-field ${errors.email ? 'border-red-500' : ''}`}
+                    placeholder="Enter your email"
+                    required
+                  />
+                  {errors.email && (
+                    <p className="text-red-600 text-sm mt-1">{errors.email}</p>
+                  )}
+                  {formData.email && !errors.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
+                    <p className="text-green-600 text-sm mt-1">✓ Valid email address</p>
+                  )}
+                </div>
+              </div>
+
+              {(userType === 'dealer' || userType === 'showroom') && (
+                <>
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                      <Building2 className="w-5 h-5" />
+                      Business Details
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Business Name *</label>
+                        <input
+                          type="text"
+                          value={formData.business_name}
+                          onChange={(e) => handleChange('business_name', e.target.value)}
+                          className="input-field"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">GST Number *</label>
+                        <input
+                          type="text"
+                          value={formData.gst_number}
+                          onChange={(e) => handleChange('gst_number', e.target.value)}
+                          placeholder="29ABCDE1234F1Z5"
+                          className="input-field"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Contact Person</label>
+                        <input
+                          type="text"
+                          value={formData.contact_person}
+                          onChange={(e) => handleChange('contact_person', e.target.value)}
+                          className="input-field"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      Location Details
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">City *</label>
+                        <input
+                          type="text"
+                          value={formData.city}
+                          onChange={(e) => handleChange('city', e.target.value)}
+                          className="input-field"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">State *</label>
+                        <input
+                          type="text"
+                          value={formData.state}
+                          onChange={(e) => handleChange('state', e.target.value)}
+                          className="input-field"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Pincode *</label>
+                        <input
+                          type="text"
+                          value={formData.pincode}
+                          onChange={(e) => handleChange('pincode', e.target.value)}
+                          maxLength={6}
+                          className="input-field"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <button type="submit" className="w-full btn-primary" disabled={loading}>
+                {loading ? 'Creating Profile...' : 'Complete Profile'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>
