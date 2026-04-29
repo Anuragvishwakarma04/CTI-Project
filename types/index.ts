@@ -5,7 +5,10 @@ export interface User {
   name: string;
   mobile: string;
   email?: string;
-  role: UserRole;
+  phone?: string;
+
+  role?: UserRole; // optional
+  user_type?: 'customer' | 'dealer' | 'showroom'; 
   avatar?: string;
   followedDealers?: string[];
   createdAt: string;

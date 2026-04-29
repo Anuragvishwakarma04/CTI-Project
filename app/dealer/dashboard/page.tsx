@@ -1425,7 +1425,7 @@ export default function DealerDashboardPage() {
                       ? 'Try adjusting your filters'
                       : 'Check back soon for new auctions'}
                   </p>
-                </div>
+                </div> 
               ) : (
                 <>
                   {/* Desktop Table */}

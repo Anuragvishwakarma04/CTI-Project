@@ -129,23 +129,26 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="relative h-80 sm:h-96 md:h-[500px] hidden md:block rounded-2xl overflow-hidden bg-gradient-to-br from-primary-50 to-blue-50">
-              {dashboardData?.banner?.image ? (
-                <Image
-                  src={dashboardData.banner.image}
-                  alt={banner.title}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <Image
-                  src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800"
-                  alt="Car Analytics Dashboard"
-                  fill
-                  className="object-cover"
-                />
-              )}
-            </div>
+<div className="hidden md:block rounded-2xl overflow-hidden bg-gradient-to-br from-primary-50 to-blue-50">
+  {dashboardData?.banner?.image ? (
+    <Image
+      src={dashboardData.banner.image}
+      alt={banner.title}
+      width={800}  
+      height={500}
+      className="w-full h-auto object-cover"
+    />
+  ) : (
+    <Image
+      src={'/Hero-image/hero4.jpg'}
+      alt="Car Analytics Dashboard"
+      width={800}  // Hero image ki width
+      height={500} // Hero image ki height
+      className="w-full h-auto object-contain" 
+      priority
+    />
+  )}
+</div>
           </div>
         </div>
       </section>

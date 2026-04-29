@@ -15,7 +15,7 @@ export default function LoanInquiry() {
           : 'text-black hover:text-primary border-transparent'
       }`}
     >
-      CarLoan
+      Carloan
     </Link>
   )
 }

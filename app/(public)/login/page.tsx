@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { Smartphone, AlertCircle } from 'lucide-react';
 import { api, auth } from '@/lib/api';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function LoginPage() {
   const [mobile, setMobile] = useState('');
@@ -17,7 +18,8 @@ export default function LoginPage() {
   const [dealerCode, setDealerCode] = useState('');
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
   const router = useRouter();
-  const { setUser, setToken } = useStore();
+  // const { setUser, setToken } = useStore();
+  const { setUser, setToken } = useAuth(); 
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -31,14 +33,17 @@ const getDashboardPath = (userType: string) => {
   return '/dashboard';
 };
 
-  useEffect(() => {
-    const token = auth.getToken();
-    const savedUser = auth.getUser();
-    if (token && savedUser) {
-      setUser(savedUser);
-      router.replace(getDashboardPath(savedUser.user_type));
-    }
-  }, [router, setUser]);
+ useEffect(() => {
+  const token = auth.getToken();
+  const savedUser = auth.getUser();
+
+  if (!token || !savedUser) return;
+
+  
+  if (window.location.pathname === '/login') {
+    router.replace(getDashboardPath(savedUser.user_type));
+  }
+}, []);
 
   const validateMobile = (value: string): string => {
     const cleaned = value.replace(/\D/g, '');
@@ -105,8 +110,8 @@ const getDashboardPath = (userType: string) => {
 
         // Profile fetch
         const profileRes = await api.getProfile(response.token);
-        console.log('USER NAME:', profileRes.user?.name);
-        console.log('IS COMPLETE:', profileRes.user?.name && profileRes.user.name.trim() !== '');
+        // console.log('USER NAME:', profileRes.user?.name);
+        // console.log('IS COMPLETE:', profileRes.user?.name && profileRes.user.name.trim() !== '');
 
         if (profileRes.success && profileRes.user) {
           const user = profileRes.user;
@@ -115,15 +120,17 @@ const getDashboardPath = (userType: string) => {
           const isProfileComplete = user.name && user.name.trim() !== '';
 
           if (isProfileComplete) {
-            // Seedha dashboard pe bhejo
+            // redirect dashboard
             auth.setUser(user);
             setUser(user);
+
             localStorage.removeItem('loginPageVisits');
 
+            router.refresh();
             if (redirectPath) {
               router.push(redirectPath);
             } else {
-              router.push(getDashboardPath(user.user_type));
+              router.replace(getDashboardPath(user.user_type || user.role));
             }
           } else {
             // Profile incomplete 

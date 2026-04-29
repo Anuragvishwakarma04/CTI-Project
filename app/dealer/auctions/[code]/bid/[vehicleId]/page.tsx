@@ -41,6 +41,21 @@ export default function BiddingPage() {
   const [tick, setTick] = useState(0);
   // const intervalRef = useRef<any>(null)
 
+  const [canRefresh, setCanRefresh] = useState(false);
+
+useEffect(() => {
+  setCanRefresh(false);
+  const timer = setTimeout(() => setCanRefresh(true), 30000);
+  return () => clearTimeout(timer);
+}, []);
+
+const handleRefresh = () => {
+  if (!canRefresh) return;
+  setCanRefresh(false);
+  fetchBids(); // ya jo bhi refresh karna hai
+  setTimeout(() => setCanRefresh(true), 30000);
+};
+
   const isLive = (() => {
     if (!auction) return false;
     const now = Date.now();
@@ -73,7 +88,6 @@ export default function BiddingPage() {
   if (!isLive || !code || !vehicleId) return;
 
   const interval = setInterval(() => {
-    console.log("FETCH BIDS HIT");
     fetchBids();
   }, 30000); 
 
@@ -92,7 +106,7 @@ export default function BiddingPage() {
       const token = auth.getToken();
       if (!token) { router.push('/login'); return; }
       const res = await api.getBidders(code as string, vehicleId as string, token);
-      console.log("FETCH All")
+      
       if (res.success) {
         const d = res.data;
         setAuction(d.auction);
@@ -107,7 +121,7 @@ export default function BiddingPage() {
 
         const fullRes = await api.getCarDetails(basicVehicle.id)
 
-        console.log("FULL CAR DATA:", fullRes)
+        
         if (fullRes.success) {
           setVehicle(fullRes.data)
         } else {
@@ -215,12 +229,38 @@ export default function BiddingPage() {
               {vehicle.brand} {vehicle.model}
             </h1>
             <span className="text-gray-400 font-medium text-base">| {vehicle.variant || vehicle.registration}</span>
-            {isLive && (
+           
+           {isLive && (
               <div className="ml-auto flex items-center gap-1.5 bg-red-100 text-red-500 text-xs font-semibold px-3 py-1.5 rounded-full">
                 <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 LIVE
               </div>
             )}
+            <button
+  onClick={handleRefresh}
+  disabled={!canRefresh}
+  className={`flex items-center justify-center w-8 h-8 rounded-full transition ${
+    canRefresh
+      ? 'bg-gray-100 hover:bg-gray-200 text-gray-600 cursor-pointer'
+      : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+  }`}
+  title={canRefresh ? 'Refresh' : 'Available in 30s'}
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="w-4 h-4"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="23 4 23 10 17 10" />
+    <polyline points="1 20 1 14 7 14" />
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+  </svg>
+</button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-start">
@@ -403,7 +443,7 @@ export default function BiddingPage() {
               </div>
 
               {/* Auction Rules */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 ">
                 <p className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
                   <span className="w-1 h-4 bg-yellow-500 rounded-full inline-block" />
                   Auction Rules

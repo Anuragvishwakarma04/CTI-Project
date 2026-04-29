@@ -6,6 +6,7 @@ import { useStore } from '@/store/useStore';
 import { api, auth } from '@/lib/api';
 import { ArrowLeft, Calendar, Car, Plus, IndianRupee, Clock, FileText, Building2, Gavel, LogIn, X, Trash2, Users } from 'lucide-react';
 import Image from 'next/image';
+import { getDashboardRoute } from '@/utils/getDashboardRoute';
 
 export default function AuctionDetailPage() {
   const { code } = useParams();
@@ -264,7 +265,7 @@ export default function AuctionDetailPage() {
     <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-6">
       {/* Back */}
       <button
-        onClick={() => router.push('/dealer/dashboard')}
+        onClick={() => router.push(getDashboardRoute(user?.user_type))}
         className="flex items-center gap-2 text-gray-600 hover:text-primary transition text-sm"
       >
         <ArrowLeft className="w-4 h-4" />

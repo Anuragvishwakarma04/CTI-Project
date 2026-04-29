@@ -20,7 +20,7 @@ export default function AuctionBanner() {
     if (savedUser && (savedUser.user_type === 'dealer')) {
       setUser(savedUser);
     }
-  }, []);
+  }, []); 
 
   // Fetch upcoming/live auctions
   useEffect(() => {

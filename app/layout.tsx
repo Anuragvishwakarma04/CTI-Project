@@ -9,8 +9,14 @@ import { usePathname } from 'next/navigation';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'CarTrade India - Buy & Sell Used Cars',
+  title: 'CarTrust India - Buy & Sell Used Cars',
   description: 'India\'s trusted platform for buying and selling quality used cars',
+
+  icons: {
+    icon: '/Hero-image/l2.png',         
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',    
+  },
 };
 
 export default function RootLayout({

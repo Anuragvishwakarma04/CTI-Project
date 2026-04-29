@@ -2,16 +2,20 @@
 
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
-import { auth } from '@/lib/api';
+// import { auth } from '@/lib/api';
+import { useAuth } from '@/lib/AuthContext';
 import { Bell, User, LogOut, X, Clock, Check, Search, ChevronDown, Settings } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import LocationSelector from '@/components/location/LocationSelector';
 import CarLoan from '@/components/Inquiry/CarLoan'
 import Insurance from '@/components/Inquiry/CarInsurance'
+import { getDashboardRoute } from '@/utils/getDashboardRoute';
+import Image from 'next/image';
 
 export default function Header() {
-  const { user, setUser, notifications } = useStore();
+  const { notifications } = useStore();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -20,26 +24,20 @@ export default function Header() {
   const [showSearch, setShowSearch] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
 
-const navLinkClass = (href: string) => {
-  const isActive = pathname === href || pathname?.startsWith(href + '/');
-  return isActive
-    ? 'text-primary border-b-2 border-primary '      // active
-    : ' hover:text-primary border-b-2 border-transparent text-black'; // inactive
-};
-  
-  const isDealerPage = pathname?.startsWith('/dealer/');
-  const isSellerType = user?.user_type === 'showroom';
+  const navLinkClass = (href: string) => {
+    const isActive = pathname === href || pathname?.startsWith(href + '/');
+    return isActive
+      ? 'text-primary border-b-2 border-primary '      // active
+      : ' hover:text-primary border-b-2 border-transparent text-black'; // inactive
+  };
 
-  useEffect(() => {
-    const savedUser = auth.getUser();
-    if (savedUser && !user) {
-      setUser(savedUser);
-    }
-  }, []);
+  const isDealerPage = pathname?.startsWith('/dealer/');
+  const isSellerType = (user?.user_type || user?.role) === 'showroom';
+
+
 
   const handleLogout = () => {
-    auth.clear();
-    setUser(null);
+    logout();
     router.push('/');
   };
 
@@ -48,11 +46,16 @@ const navLinkClass = (href: string) => {
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary-600 to-primary-800 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg sm:text-xl">C</span>
+            <Link href="/" className="flex items-center">
+              <div className="relative w-[200px] h-[45px] sm:w-[250px] sm:h-[55px]">
+                <Image
+                  src={'/Hero-image/logo1.jpeg'}
+                  alt="Car Trust India"
+                  fill
+                  className="object-contain object-left"
+                  priority
+                />
               </div>
-              <span className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Car Trust India</span>
             </Link>
 
             <div className="flex-1 max-w-2xl mx-4 sm:mx-8 hidden md:block">
@@ -100,7 +103,7 @@ const navLinkClass = (href: string) => {
                       </div>
                       <div className="hidden lg:block text-left">
                         <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                        <p className="text-xs text-gray-500 capitalize">{user.user_type}</p>
+                        <p className="text-xs text-gray-500 capitalize">{user.user_type || user.role}</p>
                       </div>
                       <ChevronDown className="w-4 h-4 text-gray-500 hidden lg:block" />
                     </button>
@@ -114,14 +117,14 @@ const navLinkClass = (href: string) => {
                         <div className="fixed sm:absolute right-4 sm:right-0 top-16 sm:top-full mt-2 w-[calc(100vw-2rem)]  lg:w-72 md:w-72 lg:right-[-2px] sm:w-72 bg-white rounded-lg shadow-xl border z-50">
                           <div className="p-4 border-b bg-gray-50">
                             <p className="font-semibold text-gray-900">{user.name}</p>
-                            <p className="text-sm text-gray-600">{user.email || user.phone}</p>
+                            <p className="text-sm text-gray-600">{user.email || user.phone || user.mobile}</p>
                             <span className="inline-block mt-2 px-2 py-1 bg-primary-100 text-primary text-xs rounded capitalize">
-                              {user.user_type}
+                              {user.user_type || user.role}
                             </span>
                           </div>
                           <div className="py-2">
                             <Link
-                              href={isSellerType ? '/dealer/dashboard' : '/dashboard'}
+                              href={getDashboardRoute(user?.user_type || user?.role)}
                               className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition"
                               onClick={() => setShowProfileMenu(false)}
                             >

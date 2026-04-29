@@ -6,7 +6,8 @@ import { useStore } from '@/store/useStore';
 import { api, auth } from '@/lib/api';
 import { vehicleMasters, Brand, Model, Variant } from '@/lib/api/vehicle-masters';
 import { Car, DollarSign, FileText, Image as ImageIcon, ChevronRight, ChevronLeft, Save, Check, Upload, X, Star, IndianRupee, AlertCircle } from 'lucide-react';
-
+import { getDashboardRoute } from '@/utils/getDashboardRoute';
+ 
 const OWNERSHIPS = ['1st owner', '2nd owner', '3rd owner', '4th owner'];
 
 export default function AddVehiclePage() {
@@ -24,6 +25,7 @@ export default function AddVehiclePage() {
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [loadingVariants, setLoadingVariants] = useState(false);
+ 
   
   const [formData, setFormData] = useState({
     // Step 1: Vehicle Details
@@ -453,7 +455,7 @@ export default function AddVehiclePage() {
       if (response.success) {
         setSuccess('Vehicle submitted successfully! Redirecting...');
         setTimeout(() => {
-          router.push('/dealer/dashboard');
+          router.push(getDashboardRoute(user?.user_type));
         }, 2000);
       } else {
         throw new Error(response.message || 'Failed to submit vehicle');
@@ -492,7 +494,7 @@ export default function AddVehiclePage() {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => router.push('/dealer/dashboard')}
+            onClick={() => router.push(getDashboardRoute(user?.user_type))}
             className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary mb-4 transition"
           >
             <ChevronLeft className="w-4 h-4" />

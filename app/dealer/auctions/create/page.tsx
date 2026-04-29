@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { api, auth } from '@/lib/api';
 import { ArrowLeft, Gavel, Car, Plus, X, IndianRupee } from 'lucide-react';
+import { getDashboardRoute } from '@/utils/getDashboardRoute';
 
 interface SelectedVehicle {
   vehicle_id: string;
@@ -22,6 +23,7 @@ export default function CreateAuctionPage() {
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [selectedVehicles, setSelectedVehicles] = useState<SelectedVehicle[]>([]);
   const [showPicker, setShowPicker] = useState(false);
+  
 
   const [form, setForm] = useState({
     title: '',
@@ -109,7 +111,7 @@ export default function CreateAuctionPage() {
         reserve_prices: selectedVehicles.map(sv => sv.reserve_price),
       };
       
-      console.log('Creating auction with payload:', payload);
+      
       
       const res = await api.createAuction(token, payload);
       
@@ -117,7 +119,7 @@ export default function CreateAuctionPage() {
       
       if (res.success) {
         alert('Auction created successfully!');
-        router.push('/dealer/dashboard');
+        router.push(getDashboardRoute(user?.user_type));
       } else if (res.errors) {
         const fe: Record<string, string> = {};
         Object.keys(res.errors).forEach(k => { fe[k] = res.errors[k][0]; });
@@ -140,7 +142,7 @@ export default function CreateAuctionPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 sm:py-8 space-y-6">
-      <button onClick={() => router.push('/dealer/dashboard')}
+      <button onClick={() => router.push(getDashboardRoute(user?.user_type))}
         className="flex items-center gap-2 text-gray-600 hover:text-primary transition text-sm">
         <ArrowLeft className="w-4 h-4" /> Back to Dashboard
       </button>

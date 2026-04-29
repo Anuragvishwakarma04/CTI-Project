@@ -27,7 +27,7 @@ export default function CarInsurance() {
   const handleSubmit = (e: any) => {
     e.preventDefault()
     console.log(form)
-    alert('Insurance Request Submitted 🚗')
+    alert('Insurance Request Submitted')
     setForm(initialForm)
   }
 

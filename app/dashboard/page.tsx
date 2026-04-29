@@ -434,7 +434,7 @@ export default function DashboardPage() {
         { id: 'appointments', label: 'Appointments', icon: Calendar },
         { id: 'activity', label: 'Activity', icon: Clock },
       ];
-
+// console.log("USER TYPE:", user?.user_type);
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Success Message */}
