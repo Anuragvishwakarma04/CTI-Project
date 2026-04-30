@@ -129,26 +129,26 @@ export default function Home() {
                 </div>
               </div>
             </div>
-<div className="hidden md:block rounded-2xl overflow-hidden bg-gradient-to-br from-primary-50 to-blue-50">
-  {dashboardData?.banner?.image ? (
-    <Image
-      src={dashboardData.banner.image}
-      alt={banner.title}
-      width={800}  
-      height={500}
-      className="w-full h-auto object-cover"
-    />
-  ) : (
-    <Image
-      src={'/Hero-image/hero4.jpg'}
-      alt="Car Analytics Dashboard"
-      width={800}  // Hero image ki width
-      height={500} // Hero image ki height
-      className="w-full h-auto object-contain" 
-      priority
-    />
-  )}
-</div>
+            <div className="hidden md:block rounded-2xl overflow-hidden bg-gradient-to-br from-primary-50 to-blue-50">
+              {dashboardData?.banner?.image ? (
+                <Image
+                  src={dashboardData.banner.image}
+                  alt={banner.title}
+                  width={800}
+                  height={500}
+                  className="w-full h-auto object-cover"
+                />
+              ) : (
+                <Image
+                  src={'/Hero-image/hero4.jpg'}
+                  alt="Car Analytics Dashboard"
+                  width={800}  // Hero image ki width
+                  height={500} // Hero image ki height
+                  className="w-full h-auto object-contain"
+                  priority
+                />
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -244,7 +244,7 @@ export default function Home() {
             </div>
           ) : topFavorites.length > 0 ? (
             topFavorites.map((car: any) => (
-              <CarCard key={car.id} car={car} />
+              <CarCard key={car.vehicle_id || car.id} car={car} />
             ))
           ) : (
             <div className="col-span-full text-center py-12">
@@ -270,7 +270,7 @@ export default function Home() {
               </div>
             ) : trendingFavorites.length > 0 ? (
               trendingFavorites.map((car: any) => (
-                <CarCard key={car.id} car={car} />
+                <CarCard key={car.vehicle_id || car.id} car={car} />
               ))
             ) : (
               <div className="col-span-full text-center py-12">
@@ -298,7 +298,7 @@ export default function Home() {
           </button>
         </div>
       </section>
-      <AuctionBanner/>
+      <AuctionBanner />
       {/* <SupportButton/> */}
     </div>
   );

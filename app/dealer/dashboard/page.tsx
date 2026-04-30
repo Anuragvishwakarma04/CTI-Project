@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { User, Phone, Mail, Car, LogOut, Edit, Clock, TrendingUp, Eye, EyeOff, Building2, Calendar, Users, DollarSign, MessageSquare, ChevronRight, Home, MapPin, IndianRupee, Trash2, MoreVertical, PowerOff, Gavel, Search, Wallet, List, Plus, Check } from 'lucide-react';
+import { User, IndianRupeeIcon, Store, Phone, Mail, Car, LogOut, Edit, Clock, TrendingUp, Eye, EyeOff, Building2, Calendar, Users, DollarSign, MessageSquare, ChevronRight, Home, MapPin, IndianRupee, Trash2, MoreVertical, PowerOff, Gavel, Search, Wallet, List, Plus, Check } from 'lucide-react';
 import Link from 'next/link';
 import { api, auth } from '@/lib/api';
 import { appointmentsApi } from '@/lib/api/appointments';
@@ -50,6 +50,43 @@ export default function DealerDashboardPage() {
   const [soldMessage, setSoldMessage] = useState('');
   const hasLoadedProfile = useRef(false);
 
+  const [showrooms, setShowrooms] = useState<any[]>([]);
+  const [showroomLoading, setShowroomLoading] = useState(false);
+
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const section = params.get("section");
+
+  if (section) {
+    setActiveSection(section);
+  }
+}, []);
+
+  const fetchShowrooms = async () => {
+    try {
+      setShowroomLoading(true);
+      const token = auth.getToken();
+      if (!token) return;
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/dealer/showrooms`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const data = await res.json();
+      console.log("SHOWROOMS:", data);
+
+      // ✅ FIX HERE
+      setShowrooms(data.data?.showrooms || []);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setShowroomLoading(false);
+    }
+  };
 
   const [copied, setCopied] = useState(false);
 
@@ -96,7 +133,7 @@ export default function DealerDashboardPage() {
 
   useEffect(() => {
     // Store current section in sessionStorage whenever it changes
-    
+
     sessionStorage.setItem('dashboard_section', activeSection);
 
     if (activeSection === 'overview' && user) {
@@ -114,8 +151,11 @@ export default function DealerDashboardPage() {
     if (activeSection === 'auctions' && user) {
       fetchAuctions();
     }
+    if (activeSection === 'showrooms' && user) {
+      fetchShowrooms();
+    }
   }, [activeSection, user, statusFilter, currentPage, searchQuery, auctionCategory, auctionSearch, auctionDateFrom, auctionDateTo, auctionStatus, auctionSortBy, auctionSortOrder, auctionPage, auctionPerPage]);
-  
+
   const fetchDashboardStats = async () => {
     try {
       setStatsLoading(true);
@@ -474,6 +514,7 @@ export default function DealerDashboardPage() {
                 </button>
               )}
 
+
               {user.user_type === 'showroom' && (
                 <>
                   <button
@@ -551,7 +592,7 @@ export default function DealerDashboardPage() {
                   >
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition ${activeSection === 'sales' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-600 group-hover:bg-primary group-hover:text-white'
                       }`}>
-                      <DollarSign className="w-5 h-5" />
+                      <IndianRupeeIcon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 text-left">
                       <p className={`font-medium text-sm ${activeSection === 'sales' ? 'text-white' : 'text-gray-900'
@@ -577,6 +618,24 @@ export default function DealerDashboardPage() {
                     <ChevronRight className={`w-4 h-4 ${activeSection === 'customers' ? 'text-white' : 'text-gray-400 group-hover:text-primary'
                       }`} />
                   </button>
+                  {user.user_type !== 'showroom' && (
+                    <button
+                      onClick={() => setActiveSection('showrooms')}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg transition group ${activeSection === 'inventory' ? 'bg-primary text-white' : 'hover:bg-primary-50'
+                        }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition ${activeSection === 'inventory' ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600 group-hover:bg-primary group-hover:text-white'
+                        }`}>
+                        <Store className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className={`font-medium text-sm ${activeSection === 'inventory' ? 'text-white' : 'text-gray-900'
+                          }`}>Showroom</p>
+                      </div>
+                      <ChevronRight className={`w-4 h-4 ${activeSection === 'inventory' ? 'text-white' : 'text-gray-400 group-hover:text-primary'
+                        }`} />
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -633,9 +692,9 @@ export default function DealerDashboardPage() {
                     <div className="flex items-center gap-2">
                       <span className="sm:text-base bg-gray-100 px-2 py-1 rounded-md text-xs font-semibold text-gray-700">
                         {user.user_type === 'showroom'
-                        ? `${user.user_type}`
-                        : `Dealer ID: ${user.dealer_code}`}
-                         
+                          ? `${user.user_type}`
+                          : `Dealer ID: ${user.dealer_code}`}
+
                       </span>
 
                       <button
@@ -643,9 +702,9 @@ export default function DealerDashboardPage() {
                         className="p-1 rounded hover:bg-gray-200 transition"
                       >
                         {user.user_type === 'showroom'
-                        ? ''
-                        : `${copied ? "✅" : "📑"}`}
-                        
+                          ? ''
+                          : `${copied ? "✅" : "📑"}`}
+
                       </button>
                     </div>
                   </div>
@@ -1425,7 +1484,7 @@ export default function DealerDashboardPage() {
                       ? 'Try adjusting your filters'
                       : 'Check back soon for new auctions'}
                   </p>
-                </div> 
+                </div>
               ) : (
                 <>
                   {/* Desktop Table */}
@@ -1744,6 +1803,98 @@ export default function DealerDashboardPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {activeSection === 'showrooms' && (
+            <div className="space-y-8">
+
+              <h2 className="text-3xl font-bold text-gray-900">All Showrooms</h2>
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 p-6">
+
+                {showroomLoading ? (
+
+                  // 🔥 CENTER LOADER (3D feel)
+                  <div className="flex flex-col items-center justify-center h-[300px]">
+                    <div className="relative w-16 h-16">
+                      <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+                      <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <p className="mt-4 text-gray-500 animate-pulse">Loading Showrooms...</p>
+                  </div>
+
+                ) : showrooms.length === 0 ? (
+                  <p className="text-center text-gray-500 py-10">No showrooms found</p>
+                ) : (
+
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+                    {showrooms.map((s) => (
+
+                      <div
+                        key={s.showroomCode}
+                        className="relative bg-white/70 backdrop-blur-xl rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-200 group hover:-translate-y-2 hover:scale-[1.02]"
+                      >
+
+                        {/* 🔥 Image */}
+                        <div className="relative h-44 w-full overflow-hidden rounded-t-2xl">
+                          <img
+                            src="https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1200"
+                            className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                          />
+
+                          {/* Gradient Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+
+                          {/* Badge */}
+                          <span className="absolute top-3 left-3 bg-white/20 backdrop-blur px-3 py-1 text-xs rounded-full text-white border border-white/30">
+                            Showroom
+                          </span>
+                        </div>
+
+                        {/*  Content */}
+                        <div className="p-5 space-y-3">
+
+                          <h3
+                            className={`font-bold text-lg transition ${s.showroomName
+                              ? "text-gray-900 group-hover:text-primary"
+                              : "text-gray-400 line-through"
+                              }`}
+                          >
+                            {s.showroomName || "No Name"}
+                          </h3>
+
+                          <p className="text-sm text-gray-500 flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-primary" />
+                            <span>{s.city || s.location || "No location"}</span>
+                          </p>
+
+                          <p className="text-sm text-gray-500 flex items-center gap-1">
+                            📞 {s.mobile || "No phone"}
+                          </p>
+
+                          <p className="text-sm font-medium text-gray-700">
+                            🚗 {s.totalCars || 0} Cars Available
+                          </p>
+
+                          {/* Divider */}
+                          <div className="border-t"></div>
+
+                          {/* Button */}
+                          <button
+                            onClick={() => router.push(`/dealer/showroom/${s.showroomCode}?from=showrooms`)}
+                            className="w-full bg-gradient-to-r from-primary to-blue-500 text-white py-2 rounded-xl text-sm font-semibold shadow hover:scale-105 transition"
+                          >
+                            Visit Showroom →
+                          </button>
+                        </div>
+                      </div>
+
+                    ))}
+
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

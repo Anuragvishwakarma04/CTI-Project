@@ -14,17 +14,29 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
-  setUser: () => {},
-  setToken: () => {},
-  logout: () => {},
+  setUser: () => { },
+  setToken: () => { },
+  logout: () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUserState] = useState<User | null>(null);
-  const [token, setTokenState] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [user, setUserState] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      return storedUser ? JSON.parse(storedUser) : null;
+    }
+    return null;
+  });
+
+  const [token, setTokenState] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
+  });
 
   useEffect(() => {
     setMounted(true);
