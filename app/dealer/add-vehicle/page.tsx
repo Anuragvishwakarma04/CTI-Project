@@ -65,6 +65,7 @@ export default function AddVehiclePage() {
     // Step 4: Media
     description: '',
     features: [] as string[],
+    images:[],
     
     // Step 5: Inventory
     status: 'available',
