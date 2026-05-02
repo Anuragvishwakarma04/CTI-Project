@@ -25,6 +25,8 @@ export default function AddVehiclePage() {
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [loadingVariants, setLoadingVariants] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
+  const [uploadedImages, setUploadedImages] = useState<Record<string, any[]>>({});
  
   
   const [formData, setFormData] = useState({
@@ -63,16 +65,6 @@ export default function AddVehiclePage() {
     // Step 4: Media
     description: '',
     features: [] as string[],
-    images: {
-      featured: null as File | null,
-      front: [] as File[],
-      rear: [] as File[],
-      side: [] as File[],
-      interior: [] as File[],
-      dashboard: [] as File[],
-      engine: [] as File[],
-      other: [] as File[],
-    },
     
     // Step 5: Inventory
     status: 'available',
@@ -95,6 +87,13 @@ export default function AddVehiclePage() {
       loadDraft(draftId);
     }
   }, [user, router]);
+
+  // Load images when vehicleId is set and on step 4
+  useEffect(() => {
+    if (vehicleId && currentStep === 4) {
+      loadVehicleImages(vehicleId);
+    }
+  }, [vehicleId, currentStep]);
 
   const fetchBrands = async () => {
     try {
@@ -244,6 +243,9 @@ export default function AddVehiclePage() {
         
         setSuccess('Draft loaded successfully!');
         setTimeout(() => setSuccess(''), 3000);
+        
+        // Load existing images
+        loadVehicleImages(draftId);
       } else {
         throw new Error(response.message || 'Failed to load draft');
       }
@@ -255,45 +257,106 @@ export default function AddVehiclePage() {
     }
   };
 
+  const loadVehicleImages = async (vehicleId: string) => {
+    try {
+      const token = auth.getToken();
+      if (!token) return;
+      
+      const response = await api.getVehicleImages(token, vehicleId);
+      console.log('Load images response:', response);
+      
+      if (response.success) {
+        // Images are in response.data.images
+        const images = response.data?.images || response.data || [];
+        console.log('Images to process:', images);
+        
+        const imagesByCategory: Record<string, any[]> = {};
+        images.forEach((img: any) => {
+          const category = img.category || 'other';
+          if (!imagesByCategory[category]) {
+            imagesByCategory[category] = [];
+          }
+          imagesByCategory[category].push(img);
+        });
+        
+        console.log('Images by category:', imagesByCategory);
+        setUploadedImages(imagesByCategory);
+      }
+    } catch (err) {
+      console.error('Failed to load images:', err);
+    }
+  };
+
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError('');
   };
 
-  const handleImageUpload = (category: string, files: FileList | null) => {
-    if (!files) return;
-    const fileArray = Array.from(files);
+  const handleImageUpload = async (category: string, files: FileList | null) => {
+    if (!files || !vehicleId) return;
     
-    if (category === 'featured') {
-      setFormData(prev => ({
+    const token = auth.getToken();
+    if (!token) return;
+    
+    setUploadingImages(prev => ({ ...prev, [category]: true }));
+    
+    try {
+      const fileArray = Array.from(files);
+      const uploadPromises = fileArray.map(file => 
+        api.uploadVehicleImage(token, vehicleId, file, category)
+      );
+      
+      const results = await Promise.all(uploadPromises);
+      
+      // Update uploaded images state
+      setUploadedImages(prev => ({
         ...prev,
-        images: { ...prev.images, featured: fileArray[0] }
+        [category]: [...(prev[category] || []), ...results.map(r => r.data)]
       }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        images: {
-          ...prev.images,
-          [category]: [...(prev.images[category as keyof typeof prev.images] as File[]), ...fileArray]
-        }
-      }));
+      
+      setSuccess(`${fileArray.length} image(s) uploaded successfully!`);
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload images');
+    } finally {
+      setUploadingImages(prev => ({ ...prev, [category]: false }));
     }
   };
 
-  const removeImage = (category: string, index?: number) => {
-    if (category === 'featured') {
-      setFormData(prev => ({
+  const removeImage = async (category: string, imageId: number | string) => {
+    if (!vehicleId || !imageId) return;
+    
+    const token = auth.getToken();
+    if (!token) return;
+    
+    try {
+      // If imageId is 'featured', use category-based delete
+      if (imageId === 'featured') {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/vehicles/${vehicleId}/images/featured`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+          },
+        });
+        
+        if (!res.ok) throw new Error('Failed to delete featured image');
+      } else {
+        await api.deleteVehicleImage(token, vehicleId, imageId as number);
+      }
+      
+      // Update uploaded images state
+      setUploadedImages(prev => ({
         ...prev,
-        images: { ...prev.images, featured: null }
+        [category]: (prev[category] || []).filter(img => 
+          imageId === 'featured' ? false : img.id !== imageId
+        )
       }));
-    } else if (index !== undefined) {
-      setFormData(prev => ({
-        ...prev,
-        images: {
-          ...prev.images,
-          [category]: (prev.images[category as keyof typeof prev.images] as File[]).filter((_, i) => i !== index)
-        }
-      }));
+      
+      setSuccess('Image deleted successfully!');
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete image');
     }
   };
 
@@ -420,36 +483,16 @@ export default function AddVehiclePage() {
       const token = auth.getToken();
       if (!token) throw new Error('Not authenticated');
 
-      // Step 4: Upload media and finalize
-      const formDataStep4 = new FormData();
+      // Step 4: Finalize listing (images already uploaded)
+      const step4Data: any = {
+        status: formData.status,
+      };
       
-      // Featured image
-      if (formData.images.featured) {
-        console.log('Adding featured image:', formData.images.featured.name);
-        formDataStep4.append('featured_image', formData.images.featured);
-      } else {
-        console.warn('No featured image selected');
-      }
+      if (formData.description) step4Data.description = formData.description;
+      if (formData.features.length > 0) step4Data.features = formData.features;
       
-      // Categorized images
-      ['front', 'rear', 'side', 'interior', 'dashboard', 'engine', 'other'].forEach(category => {
-        const images = formData.images[category as keyof typeof formData.images] as File[];
-        console.log(`${category} images count:`, images.length);
-        images.forEach((file, index) => {
-          console.log(`Adding ${category} image ${index + 1}:`, file.name);
-          formDataStep4.append(`${category}_images[]`, file);
-        });
-      });
-      
-      // Description and features
-      if (formData.description) formDataStep4.append('description', formData.description);
-      formData.features.forEach(feature => {
-        formDataStep4.append('features[]', feature);
-      });
-      formDataStep4.append('status', formData.status);
-      
-      console.log('Submitting FormData with images...');
-      const response = await api.updateVehicleStep4(token, vehicleId, formDataStep4);
+      console.log('Submitting Step 4 data...');
+      const response = await api.updateVehicleStep4(token, vehicleId, step4Data);
       console.log('Step 4 response:', response);
       
       if (response.success) {
@@ -901,54 +944,67 @@ export default function AddVehiclePage() {
                     <h2 className="text-xl font-bold">Photos & Listing</h2>
                     <div className="text-sm text-gray-600">
                       Total Images: <span className="font-semibold text-primary">
-                        {(formData.images.featured ? 1 : 0) + 
-                         formData.images.front.length + 
-                         formData.images.rear.length + 
-                         formData.images.side.length + 
-                         formData.images.interior.length + 
-                         formData.images.dashboard.length + 
-                         formData.images.engine.length + 
-                         formData.images.other.length}
+                        {Object.values(uploadedImages).reduce((sum, imgs) => sum + imgs.length, 0)}
                       </span>
                     </div>
                   </div>
                   
+                  {!vehicleId && (
+                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg">
+                      <p className="text-sm">Please complete previous steps to upload images.</p>
+                    </div>
+                  )}
+                  
                   {/* Featured Image */}
                   <div>
-                    <label className=" text-sm font-semibold mb-2 flex items-center gap-2">
+                    <label className="text-sm font-semibold mb-2 flex items-center gap-2">
                       <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                       Featured Image (Main Display) *
                     </label>
                     <div className="border-2 border-dashed border-primary rounded-lg p-6 text-center hover:border-primary-dark transition">
-                      {formData.images.featured ? (
+                      {uploadedImages.featured && uploadedImages.featured.length > 0 ? (
                         <div className="relative">
                           <img 
-                            src={URL.createObjectURL(formData.images.featured)} 
+                            src={uploadedImages.featured[0].image_url} 
                             alt="Featured" 
                             className="max-h-48 mx-auto rounded-lg"
                           />
                           <button
-                            onClick={() => removeImage('featured')}
-                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                            onClick={() => removeImage('featured', uploadedImages.featured[0].id || 'featured')}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 cursor-pointer transition"
+                            disabled={uploadingImages.featured}
                           >
                             <X className="w-4 h-4" />
                           </button>
                         </div>
                       ) : (
                         <>
-                          <ImageIcon className="w-12 h-12 text-primary mx-auto mb-2" />
-                          <p className="text-sm font-semibold text-gray-700 mb-1">Upload Featured Image</p>
-                          <p className="text-xs text-gray-500 mb-3">This will be the main image shown on listings</p>
-                          <input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload('featured', e.target.files)}
-                            className="hidden" 
-                            id="featured-upload"
-                          />
-                          <label htmlFor="featured-upload" className="btn-primary cursor-pointer inline-block">
-                            Choose Image
-                          </label>
+                          {uploadingImages.featured ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                              <p className="text-sm text-gray-600">Uploading...</p>
+                            </div>
+                          ) : (
+                            <>
+                              <ImageIcon className="w-12 h-12 text-primary mx-auto mb-2" />
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Upload Featured Image</p>
+                              <p className="text-xs text-gray-500 mb-3">This will be the main image shown on listings</p>
+                              <input 
+                                type="file" 
+                                accept="image/*"
+                                onChange={(e) => handleImageUpload('featured', e.target.files)}
+                                className="hidden" 
+                                id="featured-upload"
+                                disabled={!vehicleId}
+                              />
+                              <label 
+                                htmlFor="featured-upload" 
+                                className={`btn-primary cursor-pointer inline-block ${!vehicleId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              >
+                                Choose Image
+                              </label>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
@@ -970,23 +1026,33 @@ export default function AddVehiclePage() {
                         </label>
                         
                         {/* Preview Images */}
-                        {(formData.images[key as keyof typeof formData.images] as File[] | null)?.length && (formData.images[key as keyof typeof formData.images] as File[]).length > 0 && (
+                        {uploadedImages[key] && uploadedImages[key].length > 0 && (
                           <div className="grid grid-cols-3 gap-2 mb-3">
-                            {(formData.images[key as keyof typeof formData.images] as File[]).map((file, idx) => (
-                              <div key={idx} className="relative group">
+                            {uploadedImages[key].map((img: any, idx: number) => (
+                              <div key={img.id || idx} className="relative group">
                                 <img 
-                                  src={URL.createObjectURL(file)} 
-                                  alt={`${label} ${idx + 1}`}
+                                  src={img.image_url} 
+                                  alt={`${label}`}
                                   className="w-full h-20 object-cover rounded"
                                 />
-                                <button
-                                  onClick={() => removeImage(key, idx)}
-                                  className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
+                                {img.id && (
+                                  <button
+                                    onClick={() => removeImage(key, img.id)}
+                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded hover:bg-red-600 cursor-pointer opacity-0 group-hover:opacity-100 transition"
+                                    disabled={uploadingImages[key]}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
                               </div>
                             ))}
+                          </div>
+                        )}
+                        
+                        {uploadingImages[key] && (
+                          <div className="flex items-center justify-center gap-2 p-3 mb-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            <span className="text-xs text-gray-600">Uploading...</span>
                           </div>
                         )}
                         
@@ -997,13 +1063,14 @@ export default function AddVehiclePage() {
                           onChange={(e) => handleImageUpload(key, e.target.files)}
                           className="hidden" 
                           id={`${key}-upload`}
+                          disabled={!vehicleId || uploadingImages[key]}
                         />
                         <label 
                           htmlFor={`${key}-upload`} 
-                          className="flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-lg hover:border-primary cursor-pointer transition text-sm text-gray-600 hover:text-primary"
+                          className={`flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-lg hover:border-primary cursor-pointer transition text-sm text-gray-600 hover:text-primary ${(!vehicleId || uploadingImages[key]) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <Upload className="w-4 h-4" />
-                          Add Images ({(formData.images[key as keyof typeof formData.images] as File[]).length})
+                          Add Images ({uploadedImages[key]?.length || 0})
                         </label>
                       </div>
                     ))}
@@ -1012,25 +1079,36 @@ export default function AddVehiclePage() {
                   {/* Other Images */}
                   <div className="border rounded-lg p-4">
                     <label className="block text-sm font-semibold mb-3">📸 Other Images</label>
-                    {formData.images.other.length > 0 && (
+                    {uploadedImages.other && uploadedImages.other.length > 0 && (
                       <div className="grid grid-cols-4 gap-2 mb-3">
-                        {formData.images.other.map((file, idx) => (
-                          <div key={idx} className="relative group">
+                        {uploadedImages.other.map((img: any, idx: number) => (
+                          <div key={img.id || idx} className="relative group">
                             <img 
-                              src={URL.createObjectURL(file)} 
-                              alt={`Other ${idx + 1}`}
+                              src={img.image_url} 
+                              alt="Other"
                               className="w-full h-20 object-cover rounded"
                             />
-                            <button
-                              onClick={() => removeImage('other', idx)}
-                              className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
+                            {img.id && (
+                              <button
+                                onClick={() => removeImage('other', img.id)}
+                                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded hover:bg-red-600 cursor-pointer opacity-0 group-hover:opacity-100 transition"
+                                disabled={uploadingImages.other}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
                     )}
+                    
+                    {uploadingImages.other && (
+                      <div className="flex items-center justify-center gap-2 p-3 mb-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        <span className="text-xs text-gray-600">Uploading...</span>
+                      </div>
+                    )}
+                    
                     <input 
                       type="file" 
                       accept="image/*"
@@ -1038,13 +1116,14 @@ export default function AddVehiclePage() {
                       onChange={(e) => handleImageUpload('other', e.target.files)}
                       className="hidden" 
                       id="other-upload"
+                      disabled={!vehicleId || uploadingImages.other}
                     />
                     <label 
                       htmlFor="other-upload" 
-                      className="flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg hover:border-primary cursor-pointer transition text-sm text-gray-600 hover:text-primary"
+                      className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg hover:border-primary cursor-pointer transition text-sm text-gray-600 hover:text-primary ${(!vehicleId || uploadingImages.other) ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Upload className="w-5 h-5" />
-                      Add More Images ({formData.images.other.length})
+                      Add More Images ({uploadedImages.other?.length || 0})
                     </label>
                   </div>
                   

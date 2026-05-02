@@ -31,10 +31,11 @@ export default function DealerListingDetailPage() {
   const handleBackToDashboard = () => {
     // Check if there's a referrer in session storage
     const referrer = sessionStorage.getItem('dashboard_section');
+    const dashboardRoute = user?.user_type === 'showroom' ? '/dealer/dashboard' : '/dealer/dashboard';
     if (referrer) {
-      router.push(`/dealer/dashboard?section=${referrer}`);
+      router.push(`${dashboardRoute}?section=${referrer}`);
     } else {
-      router.push('/dealer/dashboard');
+      router.push(dashboardRoute);
     }
   };
 

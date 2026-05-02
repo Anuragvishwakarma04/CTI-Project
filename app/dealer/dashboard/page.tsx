@@ -330,7 +330,12 @@ export default function DealerDashboardPage() {
   };
 
   const handleVehicleClick = (vehicle: any) => {
-    router.push(`/dealer/listings/${vehicle.vehicle_id}`);
+    // If draft, go to add-vehicle page to complete it
+    if (vehicle.status === 'draft') {
+      router.push(`/dealer/add-vehicle?draft=${vehicle.vehicle_id}`);
+    } else {
+      router.push(`/dealer/listings/${vehicle.vehicle_id}`);
+    }
   };
 
   const handleDeleteVehicle = async (vehicleId: string, e: React.MouseEvent) => {
@@ -960,7 +965,7 @@ export default function DealerDashboardPage() {
                                 {vehicle.status === 'draft' ? (
                                   <>
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); router.push(`/dealer/edit-vehicle/${vehicle.vehicle_id}`); }}
+                                      onClick={(e) => { e.stopPropagation(); router.push(`/dealer/add-vehicle?draft=${vehicle.vehicle_id}`); }}
                                       className="flex-1 btn-primary text-sm flex items-center justify-center gap-2"
                                     >
                                       <Edit className="w-4 h-4" />
@@ -1218,7 +1223,7 @@ export default function DealerDashboardPage() {
                             {vehicle.status === 'draft' ? (
                               <>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); router.push(`/dealer/edit-vehicle/${vehicle.vehicle_id}`); }}
+                                  onClick={(e) => { e.stopPropagation(); router.push(`/dealer/add-vehicle?draft=${vehicle.vehicle_id}`); }}
                                   className="flex-1 btn-primary text-sm flex items-center justify-center gap-2"
                                 >
                                   <Edit className="w-4 h-4" />
@@ -1233,7 +1238,7 @@ export default function DealerDashboardPage() {
                               </>
                             ) : (
                               <button
-                                onClick={(e) => { e.stopPropagation(); router.push(`/dealer/edit-vehicle/${vehicle.vehicle_id}`); }}
+                                onClick={(e) => { e.stopPropagation(); router.push(`/dealer/add-vehicle?draft=${vehicle.vehicle_id}`); }}
                                 className="flex-1 btn-secondary text-sm flex items-center justify-center gap-2"
                               >
                                 <Edit className="w-4 h-4" />

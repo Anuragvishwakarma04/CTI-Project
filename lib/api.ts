@@ -172,14 +172,61 @@ export const api = {
   },
 
   // Vehicle API - Step 4: Media & Listing (Final - Changes to Pending)
-  async updateVehicleStep4(token: string, vehicleId: string, formData: FormData) {
+  async updateVehicleStep4(token: string, vehicleId: string, data: any) {
     const res = await fetch(`${API_BASE_URL}/api/vehicles/${vehicleId}/step4`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    return res.json();
+  },
+
+  // Upload Vehicle Image
+  async uploadVehicleImage(token: string, vehicleId: string, image: File, category: string) {
+    const formData = new FormData();
+    formData.append('image', image);
+    formData.append('category', category);
+    
+    const res = await fetch(`${API_BASE_URL}/api/vehicles/${vehicleId}/images`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
       },
       body: formData,
+    });
+    
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    return res.json();
+  },
+
+  // Get Vehicle Images
+  async getVehicleImages(token: string, vehicleId: string) {
+    const res = await fetch(`${API_BASE_URL}/api/vehicles/${vehicleId}/images`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
+    });
+    
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    return res.json();
+  },
+
+  // Delete Vehicle Image
+  async deleteVehicleImage(token: string, vehicleId: string, imageId: number) {
+    const res = await fetch(`${API_BASE_URL}/api/vehicles/${vehicleId}/images/${imageId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
     });
     
     if (!res.ok) throw new Error(`API Error: ${res.status}`);
