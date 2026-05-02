@@ -6,6 +6,8 @@ import { api, auth } from '@/lib/api';
 import { vehicleMasters, Brand, Model, Variant } from '@/lib/api/vehicle-masters';
 import { ArrowLeft, Save, Car, X, Upload, Trash2 } from 'lucide-react';
 import Image from 'next/image';
+import { useStore } from '@/store/useStore';
+import { getDashboardRoute } from '@/utils/getDashboardRoute';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 const OWNERSHIPS = ['1st owner', '2nd owner', '3rd owner', '4th owner'];
@@ -25,6 +27,7 @@ export default function EditVehiclePage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [models, setModels] = useState<Model[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
+  const {user} = useStore()
   
   const [form, setForm] = useState({
     brandId: '', brand: '', modelId: '', model: '', variantId: '', variant: '', year: new Date().getFullYear(),
@@ -343,7 +346,7 @@ export default function EditVehiclePage() {
       
       if (data.success) {
         setSuccess('Vehicle updated successfully! Redirecting...');
-        setTimeout(() => router.push('/dealer/dashboard'), 1500);
+      router.push(getDashboardRoute(user?.user_type));
       } else {
         setError(data.message || 'Failed to update vehicle');
       }

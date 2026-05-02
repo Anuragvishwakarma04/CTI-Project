@@ -7,6 +7,7 @@ import { Search, Eye, Edit, Calendar, Store, Car, Gavel, TrendingUp, Home, Chevr
 import { api } from '@/lib/api';
 import Image from 'next/image';
 import { appointmentsApi } from '@/lib/api/appointments';
+import { useSearchParams } from "next/navigation";
 
 
 export default function ShowroomDashboardPage() {
@@ -35,8 +36,15 @@ export default function ShowroomDashboardPage() {
   const [auctionDateTo, setAuctionDateTo] = useState('');
   const [auctionPage, setAuctionPage] = useState(1);
   const [auctionPagination, setAuctionPagination] = useState({ total: 0, per_page: 20, current_page: 1, last_page: 1 });
+  const searchParams = useSearchParams();
 
+useEffect(() => {
+  const section = searchParams.get("section");
 
+  if (section) {
+    setActiveSection(section);
+  }
+}, []);
 
   const fetchAppointments = async () => {
     try {
@@ -81,6 +89,56 @@ export default function ShowroomDashboardPage() {
     if (activeSection === 'appointments') fetchAppointments();
   }, [activeSection]);
 
+  // useEffect(() => {
+  //   if (activeSection !== 'auctions') return;
+
+  //   fetchAuctions(); // first load
+
+  //   const interval = setInterval(() => {
+  //     fetchAuctions(); // हर 5 sec refresh
+  //   }, 5000);
+
+  //   return () => clearInterval(interval);
+  // }, [activeSection]);
+
+  const handleViewAuction = async (auctionCode: string) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `https://ctiapp.morbustech.com/api/auctions/${auctionCode}/vehicles`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      console.log("VEHICLES:", data);
+      console.log("COUNT:", data.vehicles?.length);
+
+      const vehicle = data?.vehicles?.[0];
+
+      if (!vehicle || !vehicle.vehicle_id) {
+        alert("No vehicle found in this auction");
+        return;
+      }
+
+     if (data.vehicles.length === 1) {
+  router.push(`/dealer/auctions/${auctionCode}/bid/${data.vehicles[0].vehicle_id}`);
+} else {
+  router.push(`/dealer/auctions/${auctionCode}/vehicles`);
+}
+
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    }
+  };
+
 
   const getAuctionStatus = (auction: any) => {
     if (auction.status === 'draft') return 'draft';
@@ -111,6 +169,11 @@ export default function ShowroomDashboardPage() {
     const derivedStatus = getAuctionStatus(a);
     const matchesStatus = auctionStatus === 'all' || derivedStatus === auctionStatus;
     return matchesSearch && matchesStatus;
+  });
+
+  const liveAuctions = auctions.filter((a: any) => {
+    const status = getAuctionStatus(a);
+    return status === 'live';
   });
 
   const filteredVehicles = vehicles.filter((v: any) => {
@@ -527,13 +590,18 @@ export default function ShowroomDashboardPage() {
                       <div key={vehicle.vehicle_id} className="card overflow-hidden hover:shadow-xl transition-all duration-300">
                         <div onClick={() => router.push(`/dealer/listings/${vehicle.vehicle_id}`)} className="cursor-pointer">
                           <div className="relative h-48 bg-gray-200">
-                            {vehicle.image_url ? (
-                              <Image src={vehicle.image_url} alt={`${vehicle.brand} ${vehicle.model}`} fill className="object-cover" />
-                            ) : (
-                              <div className="flex items-center justify-center h-full">
-                                <Car className="w-16 h-16 text-gray-400" />
-                              </div>
-                            )}
+                            {(vehicle.featured_image || vehicle.image_url) ? (
+    <Image
+      src={vehicle.featured_image || vehicle.image_url}
+      alt={`${vehicle.brand} ${vehicle.model}`}
+      fill
+      className="object-cover" 
+    />
+  ) : (
+    <div className="flex items-center justify-center h-full">
+      <Car className="w-16 h-16 text-gray-400" />
+    </div>
+  )}
                             <div className="absolute top-3 left-3">
                               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(vehicle.status)}`}>
                                 {vehicle.status}
@@ -581,6 +649,7 @@ export default function ShowroomDashboardPage() {
             )}
 
             {activeSection === 'auctions' && (
+
               <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -754,13 +823,37 @@ export default function ShowroomDashboardPage() {
                                       {status === 'live' ? getTimeRemaining(auction.end_date) : '-'}
                                     </span>
                                   </td>
-                                  <td className="px-4 py-4 text-center">
+                                  <td className="px-4 py-4 text-center space-y-2">
+
+                                    {/* 🔍 View Button */}
                                     <button
                                       onClick={() => router.push(`/dealer/auctions/${auction.auction_code}`)}
-                                      className="text-sm text-primary font-semibold hover:underline transition"
+                                      className="w-full bg-blue-600 
+                                                    text-white py-2 rounded-lg text-sm font-semibold 
+                                                    shadow-md hover:shadow-xl 
+                                                    transition-all duration-300 
+                                                    hover:scale-[1.03] active:scale-95"
                                     >
-                                      View
+                                      View Auction
                                     </button>
+
+                                    
+                                     {status === 'live' && (
+                                        <button
+                                          onClick={() => handleViewAuction(auction.auction_code)}
+                                          className="w-full bg-gray-300 backdrop-blur-md 
+                                          border border-gray-200 
+                                          text-gray-800 py-2 rounded-lg text-sm font-semibold 
+                                          shadow-sm hover:shadow-lg 
+                                          transition-all duration-300 
+                                          hover:scale-[1.03] active:scale-95 
+                                          flex items-center justify-center gap-2"
+                                        >
+                                          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                          Live Auction
+                                        </button>
+                                      )}
+
                                   </td>
                                 </tr>
                               );

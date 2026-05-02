@@ -197,7 +197,7 @@ export default function DealerListingDetailPage() {
             <div className="flex gap-2 flex-wrap">
               <button onClick={handleEdit} className="btn-primary flex items-center gap-2">
                 <Edit className="w-4 h-4" />
-                Edit
+                
               </button>
               {vehicle.status !== 'sold' && (
                 <>
