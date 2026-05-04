@@ -267,22 +267,22 @@ useEffect(() => {
     router.push('/');
   };
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex justify-center items-center min-h-screen">
-  //       <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-  //     </div>
-  //   );
-  // }
-
-
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <p className="text-gray-600">Failed to load dashboard data</p>
+        <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
-    )
+    );
   }
+
+
+  // if (loading) {
+  //   return (
+  //     <div className="flex justify-center items-center min-h-screen">
+  //       <p className="text-gray-600">Failed to load dashboard data</p>
+  //     </div>
+  //   )
+  // }
   // const showroom = dashboardData?.showroom;
   // const counts = dashboardData?.counts;
   // const appointments = dashboardData?.appointments;

@@ -297,46 +297,77 @@ export default function BiddingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-start">
             {/* LEFT: Images + Specs */}
             <div className="space-y-3">
-              {/* Main Image */}
-              <div className="border border-gray-200 rounded-xl overflow-hidden aspect-[4/3] relative max-h-[380px]">
+              {/* MAIN IMAGE */}
+              <div className="relative w-full aspect-[4/3] max-h-[400px] rounded-2xl overflow-hidden bg-gray-100 group shadow-sm">
                 {images.length > 0 ? (
                   <img
                     src={images[activeImg]}
-                    alt={`${vehicle.brand} ${vehicle.model}`}
-                    className="w-full h-full object-cover"
+                    alt="vehicle"
+                    className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Car className="w-20 h-20 text-gray-600" />
+                  <div className="flex items-center justify-center h-full">
+                    <Car className="w-16 h-16 text-gray-400" />
                   </div>
                 )}
-                {vehicle.registration && (
-                  <div className="absolute bottom-3 left-3 bg-black/70 text-white text-sm font-bold px-3 py-1 rounded-md tracking-wider">
-                    {vehicle.registration}
+
+                {/* LEFT ARROW */}
+                {images.length > 1 && (
+                  <button
+                    onClick={() =>
+                      setActiveImg((prev) => (prev > 0 ? prev - 1 : prev))
+                    }
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 text-white px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                  >
+                    ←
+                  </button>
+                )}
+
+                {/* RIGHT ARROW */}
+                {images.length > 1 && (
+                  <button
+                    onClick={() =>
+                      setActiveImg((prev) =>
+                        prev < images.length - 1 ? prev + 1 : prev,
+                      )
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 text-white px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                  >
+                    →
+                  </button>
+                )}
+
+                {/* IMAGE COUNT */}
+                {images.length > 0 && (
+                  <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                    {activeImg + 1} / {images.length}
                   </div>
                 )}
               </div>
 
               {/* Thumbnails */}
               {images.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {images.map((img: string, i: number) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveImg(i)}
-                      className={`flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                        activeImg === i
-                          ? "border-yellow-500"
-                          : "border-transparent"
-                      }`}
-                    >
-                      <img
-                        src={img}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
+                <div className="w-full max-w-[600px] overflow-hidden">
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                    {images.map((img: string, i: number) => (
+                      <div
+                        key={i}
+                        onClick={() => setActiveImg(i)}
+                        className={`ml-1 mt-1 min-w-[65px] h-[60px] rounded-lg overflow-hidden cursor-pointer transition-all duration-300 
+                                ${
+                                  activeImg === i
+                                    ? "ring-2 ring-yellow-500 scale-105"
+                                    : "opacity-80 hover:opacity-100 hover:scale-105"
+                                }`}
+                      >
+                        <img
+                          src={img}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
