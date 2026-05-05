@@ -365,7 +365,7 @@ useEffect(() => {
                     }`} />
                 </button>
 
-                <button
+                {/* <button
                   onClick={() => setActiveSection('appointments')}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg transition group ${activeSection === 'appointments' ? 'bg-primary text-white' : 'hover:bg-primary-50'
                     }`}
@@ -380,7 +380,7 @@ useEffect(() => {
                   </div>
                   <ChevronRight className={`w-4 h-4 ${activeSection === 'appointments' ? 'text-white' : 'text-gray-400 group-hover:text-primary'
                     }`} />
-                </button>
+                </button> */}
               </div>
             </div>
 
