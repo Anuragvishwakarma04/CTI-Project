@@ -10,7 +10,7 @@ interface AppState {
   setUser: (user: any | null) => void;
   setToken: (token: string | null) => void;
   addNotification: (notification: Notification) => void;
-  markNotificationRead: (id: string) => void;
+  markNotificationRead: (id: number) => void;
   setFilters: (filters: FilterOptions) => void;
 }
 
@@ -29,7 +29,7 @@ export const useStore = create<AppState>()(persist(
     markNotificationRead: (id) =>
       set((state) => ({
         notifications: state.notifications.map((n) =>
-          n.id === id ? { ...n, read: true } : n
+          n.id === id ? { ...n, is_read: true } : n
         ),
       })),
     setFilters: (filters) => set({ filters }),

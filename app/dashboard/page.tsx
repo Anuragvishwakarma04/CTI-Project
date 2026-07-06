@@ -478,7 +478,7 @@ export default function DashboardPage() {
               </div>
               <div className="card p-4 sm:p-6 hover:shadow-lg transition">
                 <Bell className="w-6 h-6 sm:w-8 sm:h-8 text-warning mb-2 sm:mb-3" />
-                <p className="text-2xl sm:text-3xl font-bold mb-1">{notifications.filter(n => !n.read).length}</p>
+                <p className="text-2xl sm:text-3xl font-bold mb-1">{notifications.filter(n => !n.is_read).length}</p>
                 <p className="text-gray-600 text-xs sm:text-sm">Notifications</p>
               </div>
             </div>

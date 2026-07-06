@@ -16,7 +16,7 @@ export default function ListingsLayout({
   const { user, setUser, notifications } = useStore();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
   const isSellerType = user?.user_type === 'dealer' || user?.user_type === 'showroom';
 
   useEffect(() => {
@@ -151,7 +151,7 @@ export default function ListingsLayout({
                       <div 
                         key={notification.id}
                         className={`p-4 hover:bg-gray-50 transition cursor-pointer ${
-                          !notification.read ? 'bg-blue-50' : ''
+                          !notification.is_read ? 'bg-blue-50' : ''
                         }`}
                       >
                         <div className="flex items-start gap-3">
@@ -168,10 +168,10 @@ export default function ListingsLayout({
                             <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
                             <div className="flex items-center gap-2 text-xs text-gray-500">
                               <Clock className="w-3 h-3" />
-                              <span>{new Date(notification.createdAt).toLocaleDateString()}</span>
+                              <span>{new Date(notification.created_at).toLocaleDateString()}</span>
                             </div>
                           </div>
-                          {!notification.read && (
+                          {!notification.is_read && (
                             <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
                           )}
                         </div>

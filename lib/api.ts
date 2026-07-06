@@ -604,6 +604,68 @@ export const api = {
   },
 };
 
+// Notification API
+export const notificationApi = {
+  // Get All Notifications
+  async getAll() {
+    const token = auth.getToken();
+    if (!token) return { success: false, notifications: [], unread_count: 0 };
+    
+    const res = await fetch(`${API_BASE_URL}/api/notifications`, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return res.json();
+  },
+
+  // Mark Notification as Read
+  async markAsRead(id: number) {
+    const token = auth.getToken();
+    if (!token) return { success: false };
+    
+    const res = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
+      method: 'PATCH',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return res.json();
+  },
+
+  // Mark All Notifications as Read
+  async markAllAsRead() {
+    const token = auth.getToken();
+    if (!token) return { success: false };
+    
+    const res = await fetch(`${API_BASE_URL}/api/notifications/mark-all-read`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return res.json();
+  },
+
+  // Delete Notification
+  async delete(id: number) {
+    const token = auth.getToken();
+    if (!token) return { success: false };
+    
+    const res = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return res.json();
+  },
+};
+
 // Token Management
 export const auth = {
   setToken(token: string) {

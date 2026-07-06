@@ -17,11 +17,14 @@ export interface User {
 export interface Dealer extends User {
   role: 'dealer';
   showroomName: string;
+  showroomCode?: string;
   location: string;
   rating: number;
   totalCars: number;
   verified: boolean;
   followers: number;
+  contactPerson?: string;
+  profileImage?: string | null;
 }
 
 export interface Car {
@@ -103,15 +106,25 @@ export interface Warranty {
 }
 
 export interface Notification {
-  id: string;
-  userId: string;
-  type: 'new_car' | 'price_drop' | 'status_update' | 'message';
+  id: number;
+  type: 'appointment_booked' | 'appointment_confirmed' | 'appointment_completed' | 'appointment_cancelled' | 'appointment_rejected' | 'appointment_rescheduled' | 'new_car' | 'price_drop' | 'status_update' | 'message';
   title: string;
   message: string;
-  carId?: string;
-  dealerId?: string;
-  read: boolean;
-  createdAt: string;
+  data?: {
+    appointment_id?: number;
+    customer_name?: string;
+    vehicle_id?: string;
+    [key: string]: any;
+  } | null;
+  is_read: boolean;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationResponse {
+  success: boolean;
+  notifications: Notification[];
+  unread_count: number;
 }
 
 export interface City {

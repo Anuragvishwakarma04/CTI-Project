@@ -21,6 +21,34 @@ export interface Variant {
   features?: string[];
 }
 
+export interface Transmission {
+  id: number;
+  transmission_type: string;
+}
+
+export interface FuelType {
+  id: number;
+  fuel_type: string;
+}
+
+export interface BodyType {
+  id: number;
+  type_name: string;
+}
+
+export interface Color {
+  id: number;
+  color_name: string;
+  color_code: string;
+}
+
+export interface BasicMasters {
+  transmissions: Transmission[];
+  fuel_types: FuelType[];
+  body_types: BodyType[];
+  colors: Color[];
+}
+
 export const vehicleMasters = {
   async getBrands(): Promise<{ success: boolean; data: Brand[]; count: number }> {
     const res = await fetch(`${API_BASE_URL}/api/vehicle-masters/brands`, {
@@ -48,6 +76,23 @@ export const vehicleMasters = {
     count: number 
   }> {
     const res = await fetch(`${API_BASE_URL}/api/vehicle-masters/models/${modelId}/variants`, {
+      headers: { 'Accept': 'application/json' },
+    });
+    return res.json();
+  },
+
+  async getBasicMasters(): Promise<{ 
+    success: boolean; 
+    message: string;
+    data: BasicMasters;
+    summary: {
+      transmissions: number;
+      fuel_types: number;
+      body_types: number;
+      colors: number;
+    }
+  }> {
+    const res = await fetch(`${API_BASE_URL}/api/vehicle-masters/basic`, {
       headers: { 'Accept': 'application/json' },
     });
     return res.json();

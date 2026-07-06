@@ -5,7 +5,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'source.unsplash.com' },
-      
+      { protocol: 'https', hostname: 'pub-61412e8650194ca19929e5c07312eebd.r2.dev' },
     ],
     formats: ['image/avif', 'image/webp'],
   },

@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useStore } from '@/store/useStore';
-// import { auth } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
-import { Bell, User, LogOut, X, Clock, Check, Search, ChevronDown, Settings } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { notificationApi } from '@/lib/api';
+import { Notification } from '@/types';
+import { Bell, User, LogOut, X, Clock, Check, Search, ChevronDown, Settings, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import LocationSelector from '@/components/location/LocationSelector';
 import CarLoan from '@/components/Inquiry/CarLoan'
@@ -14,7 +14,6 @@ import { getDashboardRoute } from '@/utils/getDashboardRoute';
 import Image from 'next/image';
 
 export default function Header() {
-  const { notifications } = useStore();
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -22,19 +21,92 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (showNotifications && user) {
+      fetchNotifications();
+    }
+  }, [showNotifications]);
+
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      const response = await notificationApi.getAll();
+      if (response.success) {
+        setNotifications(response.notifications);
+        setUnreadCount(response.unread_count);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const handleMarkAsRead = async (id: number) => {
+    try {
+      const response = await notificationApi.markAsRead(id);
+      if (response.success) {
+        setNotifications(prev =>
+          prev.map(n => (n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n))
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const response = await notificationApi.markAllAsRead();
+      if (response.success) {
+        setNotifications(prev =>
+          prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
+        );
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
+
+  const handleDeleteNotification = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const response = await notificationApi.delete(id);
+      if (response.success) {
+        const notification = notifications.find(n => n.id === id);
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        if (notification && !notification.is_read) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
 
   const navLinkClass = (href: string) => {
     const isActive = pathname === href || pathname?.startsWith(href + '/');
     return isActive
-      ? 'text-primary border-b-2 border-primary '      // active
-      : ' hover:text-primary border-b-2 border-transparent text-black'; // inactive
+      ? 'text-primary border-b-2 border-primary '
+      : ' hover:text-primary border-b-2 border-transparent text-black';
   };
 
   const isDealerPage = pathname?.startsWith('/dealer/');
   const isSellerType = (user?.user_type || user?.role) === 'showroom';
-
-
 
   const handleLogout = () => {
     logout();
@@ -183,16 +255,13 @@ export default function Header() {
             <div className=" border-gray-200 ">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <nav className="flex items-center space-x-4 sm:space-x-8 h-12">
-
                   <LocationSelector />
                   <Link href="/cars" className={`${navLinkClass('/cars')}`}>Buy Cars</Link>
                   <Link href="/dealers" className={navLinkClass('/dealers')}>Dealers</Link>
                   <Link href="/services" className={navLinkClass('/services')}>Services</Link>
                   <Link href="/warranty" className={navLinkClass('/warranty')}>Warranty</Link>
-
                   <CarLoan />
                   <Insurance />
-
                 </nav>
               </div>
             </div>
@@ -219,33 +288,56 @@ export default function Header() {
               </div>
 
               <div className="flex-1 overflow-y-auto">
-                {notifications.length > 0 ? (
+                {notificationsLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : notifications.length > 0 ? (
                   <div className="divide-y">
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-4 hover:bg-gray-50 transition cursor-pointer ${!notification.read ? 'bg-blue-50' : ''
-                          }`}
+                        onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
+                        className={`p-4 hover:bg-gray-50 transition cursor-pointer group ${!notification.is_read ? 'bg-blue-50' : ''}`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${notification.type === 'new_car' ? 'bg-blue-100' :
-                            notification.type === 'price_drop' ? 'bg-green-100' :
-                              notification.type === 'status_update' ? 'bg-yellow-100' :
-                                'bg-gray-100'
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            notification.type.includes('appointment') ? 'bg-blue-100 text-blue-600' :
+                              notification.type === 'new_car' ? 'bg-green-100 text-green-600' :
+                                notification.type === 'price_drop' ? 'bg-orange-100 text-orange-600' :
+                                  'bg-gray-100 text-gray-600'
                             }`}>
                             <Bell className="w-5 h-5" />
                           </div>
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <p className="font-semibold text-gray-900 mb-1">{notification.title}</p>
                             <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+                            {notification.data && (
+                              <div className="text-xs text-gray-500 mb-2">
+                                {notification.data.customer_name && (
+                                  <span>Customer: {notification.data.customer_name}</span>
+                                )}
+                                {notification.data.vehicle_id && (
+                                  <span className="ml-2">Vehicle: {notification.data.vehicle_id}</span>
+                                )}
+                              </div>
+                            )}
                             <div className="flex items-center gap-2 text-xs text-gray-500">
                               <Clock className="w-3 h-3" />
-                              <span>{new Date(notification.createdAt).toLocaleDateString()}</span>
+                              <span>{new Date(notification.created_at).toLocaleString()}</span>
                             </div>
                           </div>
-                          {!notification.read && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
-                          )}
+                          <div className="flex items-center gap-2">
+                            {!notification.is_read && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+                            )}
+                            <button
+                              onClick={(e) => handleDeleteNotification(notification.id, e)}
+                              className="p-1 hover:bg-red-50 rounded text-red-600 opacity-0 group-hover:opacity-100 transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -259,9 +351,12 @@ export default function Header() {
                 )}
               </div>
 
-              {notifications.length > 0 && (
+              {notifications.length > 0 && unreadCount > 0 && (
                 <div className="p-4 border-t">
-                  <button className="w-full btn-secondary flex items-center justify-center gap-2">
+                  <button 
+                    onClick={handleMarkAllAsRead}
+                    className="w-full btn-secondary flex items-center justify-center gap-2"
+                  >
                     <Check className="w-5 h-5" />
                     Mark all as read
                   </button>

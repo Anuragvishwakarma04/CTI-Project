@@ -27,7 +27,9 @@ export default function DealersPage() {
         sort: sortBy,
       }, token || undefined);
       if (response.success) {
-        setDealers(response.data.dealers);
+        // API returns 'showrooms' array, map it to dealers
+        const showrooms = response.data.showrooms || response.data.dealers || [];
+        setDealers(showrooms);
       }
     } catch (error) {
       console.error('Error fetching dealers:', error);

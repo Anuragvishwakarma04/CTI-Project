@@ -9,6 +9,10 @@ import {
   Brand,
   Model,
   Variant,
+  Transmission,
+  FuelType,
+  BodyType,
+  Color,
 } from "@/lib/api/vehicle-masters";
 import {
   Car,
@@ -41,9 +45,14 @@ export default function AddVehiclePage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [models, setModels] = useState<Model[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
+  const [transmissions, setTransmissions] = useState<Transmission[]>([]);
+  const [fuelTypes, setFuelTypes] = useState<FuelType[]>([]);
+  const [bodyTypes, setBodyTypes] = useState<BodyType[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [loadingVariants, setLoadingVariants] = useState(false);
+  const [loadingBasicMasters, setLoadingBasicMasters] = useState(false);
   const [uploadingImages, setUploadingImages] = useState<
     Record<string, boolean>
   >({});
@@ -101,8 +110,9 @@ export default function AddVehiclePage() {
       return;
     }
 
-    // Load brands on mount
+    // Load brands and basic masters on mount
     fetchBrands();
+    fetchBasicMasters();
 
     // Load draft if draft parameter exists
     const params = new URLSearchParams(window.location.search);
@@ -118,6 +128,23 @@ export default function AddVehiclePage() {
       loadVehicleImages(vehicleId);
     }
   }, [vehicleId, currentStep]);
+
+  const fetchBasicMasters = async () => {
+    try {
+      setLoadingBasicMasters(true);
+      const response = await vehicleMasters.getBasicMasters();
+      if (response.success) {
+        setTransmissions(response.data.transmissions);
+        setFuelTypes(response.data.fuel_types);
+        setBodyTypes(response.data.body_types);
+        setColors(response.data.colors);
+      }
+    } catch (err) {
+      console.error("Failed to fetch basic masters:", err);
+    } finally {
+      setLoadingBasicMasters(false);
+    }
+  };
 
   const fetchBrands = async () => {
     try {
@@ -560,7 +587,11 @@ export default function AddVehiclePage() {
       if (response.success) {
         setSuccess("Vehicle submitted successfully! Redirecting...");
         setTimeout(() => {
-          router.push(getDashboardRoute(user?.user_type));
+          if (user?.user_type === 'showroom') {
+            router.push('/dealer/dashboard?section=listings');
+          } else {
+            router.push(getDashboardRoute(user?.user_type));
+          }
         }, 2000);
       } else {
         throw new Error(response.message || "Failed to submit vehicle");
@@ -801,26 +832,42 @@ export default function AddVehiclePage() {
                       <label className="block text-sm font-semibold mb-2">
                         Fuel Type *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={formData.fuelType}
-                        className="input-field bg-gray-50"
-                        disabled
-                        placeholder="Auto-filled from variant"
-                      />
+                        onChange={(e) => handleChange("fuelType", e.target.value)}
+                        className="input-field"
+                        disabled={loadingBasicMasters}
+                      >
+                        <option value="">
+                          {loadingBasicMasters ? "Loading..." : "Select Fuel Type"}
+                        </option>
+                        {fuelTypes.map((fuel) => (
+                          <option key={fuel.id} value={fuel.fuel_type.toLowerCase()}>
+                            {fuel.fuel_type}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
                       <label className="block text-sm font-semibold mb-2">
                         Transmission *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={formData.transmission}
-                        className="input-field bg-gray-50"
-                        disabled
-                        placeholder="Auto-filled from variant"
-                      />
+                        onChange={(e) => handleChange("transmission", e.target.value)}
+                        className="input-field"
+                        disabled={loadingBasicMasters}
+                      >
+                        <option value="">
+                          {loadingBasicMasters ? "Loading..." : "Select Transmission"}
+                        </option>
+                        {transmissions.map((trans) => (
+                          <option key={trans.id} value={trans.transmission_type.toLowerCase()}>
+                            {trans.transmission_type}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
@@ -862,26 +909,42 @@ export default function AddVehiclePage() {
                       <label className="block text-sm font-semibold mb-2">
                         Color
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={formData.color}
                         onChange={(e) => handleChange("color", e.target.value)}
-                        placeholder="White, Black, Silver"
                         className="input-field"
-                      />
+                        disabled={loadingBasicMasters}
+                      >
+                        <option value="">
+                          {loadingBasicMasters ? "Loading..." : "Select Color"}
+                        </option>
+                        {colors.map((color) => (
+                          <option key={color.id} value={color.color_name}>
+                            {color.color_name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
                       <label className="block text-sm font-semibold mb-2">
                         Body Type *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={formData.bodyType}
-                        className="input-field bg-gray-50"
-                        disabled
-                        placeholder="Auto-filled from variant"
-                      />
+                        onChange={(e) => handleChange("bodyType", e.target.value)}
+                        className="input-field"
+                        disabled={loadingBasicMasters}
+                      >
+                        <option value="">
+                          {loadingBasicMasters ? "Loading..." : "Select Body Type"}
+                        </option>
+                        {bodyTypes.map((body) => (
+                          <option key={body.id} value={body.type_name.toLowerCase()}>
+                            {body.type_name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>

@@ -22,6 +22,11 @@ export default function LoginPage() {
   const { setUser, setToken } = useAuth(); 
 
   useEffect(() => {
+    // Clear session when visiting login page
+    auth.clear();
+    setUser(null);
+    setToken(null);
+    
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');
     if (redirect) setRedirectPath(redirect);
@@ -32,18 +37,6 @@ const getDashboardPath = (userType: string) => {
   if (userType === 'showroom') return '/showroom/dashboard';
   return '/dashboard';
 };
-
- useEffect(() => {
-  const token = auth.getToken();
-  const savedUser = auth.getUser();
-
-  if (!token || !savedUser) return;
-
-  
-  if (window.location.pathname === '/login') {
-    router.replace(getDashboardPath(savedUser.user_type));
-  }
-}, []);
 
   const validateMobile = (value: string): string => {
     const cleaned = value.replace(/\D/g, '');

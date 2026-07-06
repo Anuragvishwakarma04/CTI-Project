@@ -403,8 +403,19 @@ useEffect(() => {
             {activeSection === 'overview' && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center">
-                    <Store className="w-8 h-8 text-white" />
+                  <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center overflow-hidden">
+                    {showroom?.profile_image ? (
+                      <Image
+                        src={showroom.profile_image}
+                        alt={showroom.name}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <Store className="w-8 h-8 text-white" />
+                    )}
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">{showroom?.name}</h1>

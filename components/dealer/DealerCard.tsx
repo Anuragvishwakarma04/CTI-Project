@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Dealer } from '@/types';
-import { MapPin, Star, Car, Users, CheckCircle } from 'lucide-react';
+import { MapPin, Star, Car, Users, CheckCircle, User } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 import { dealersApi } from '@/lib/api/dealers';
@@ -49,20 +49,32 @@ export default function DealerCard({ dealer }: DealerCardProps) {
       setLoading(false);
     }
   };
+/*  */
+  // Get profile image with proper fallback
+  const getProfileImage = () => {
+    const profileImg = (dealer as any).profileImage || dealer.avatar;
+    return profileImg;
+  };
 
   return (
     <div className="block bg-white rounded-2xl shadow-md hover:shadow-xl transition-all overflow-hidden group">
       <div className="relative h-32 bg-gradient-to-br from-primary-500 to-primary-700">
         <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
           <div className="relative w-24 h-24 bg-white rounded-full border-4 border-white shadow-lg overflow-hidden">
-            <Image
-              src={dealer.avatar || 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200'}
-              alt={dealer.name || 'Dealer'}
-              fill
-              sizes="96px"
-              className="object-cover"
-              unoptimized
-            />
+            {getProfileImage() ? (
+              <Image
+                src={getProfileImage()}
+                alt={dealer.name || 'Dealer'}
+                fill
+                sizes="96px"
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <User className="w-12 h-12 text-gray-400" />
+              </div>
+            )}
             {dealer.verified && (
               <CheckCircle className="absolute bottom-0 right-0 w-6 h-6 text-blue-500 bg-white rounded-full" />
             )}
