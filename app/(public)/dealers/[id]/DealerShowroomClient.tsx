@@ -275,6 +275,22 @@ export default function DealerShowroomClient({ dealerId }: { dealerId: string })
         )}
       </div>
 
+      {/* <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-6">Available Cars ({dealerCars.length})</h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {dealerCars.map((car) => (
+            <CarCard key={car.id} car={car} />
+          ))}
+        </div>
+
+        {dealerCars.length === 0 && (
+          <div className="text-center py-12 text-gray-600">
+            <Car className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <p className="text-lg">No cars available at the moment</p>
+          </div>
+        )}
+      </div> */}
+
       <div>
         <h2 className="text-2xl font-bold mb-6">Reviews ({reviews.length})</h2>
         {reviews.length > 0 ? (
